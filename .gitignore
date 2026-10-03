@@ -1,0 +1,23 @@
+# Legacy CLI recorder build output
+/webcam-record
+
+# macOS / Xcode
+.build/
+.swiftpm/
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+build/
+DerivedData/
+
+# SwiftPM
+Packages/
+.build/
+
+# App bundle output (ad-hoc local test builds)
+/*.app
+/*.dmg
+
+# OS metadata
+.DS_Store
+*.swp
