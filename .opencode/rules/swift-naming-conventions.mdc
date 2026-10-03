@@ -7,12 +7,9 @@ alwaysApply: false
 
 # Swift Naming Conventions
 
-Use descriptive, self-documenting identifiers following Swift's standard conventions.
+Use descriptive, self-documenting identifiers following Swift's standard conventions (types: `UpperCamelCase`; functions/variables: `lowerCamelCase`).
 
-- **Types** (classes, structs, enums, protocols, typealiases): `UpperCamelCase` — `DiaryEntry`, `AudioRecorder`.
-- **Functions and methods**: `lowerCamelCase`, verb-named — `func startRecording()`, `func transcribe(at audioURL: URL)`.
-- **Variables and properties**: `lowerCamelCase` — `var liveTranscript`, `let outputURL`.
+- **Cases**: `lowerCamelCase` — `enum TranscriptSource { case speech, whisper, none }`.
 - **Constants**: `lowerCamelCase`, never `UPPER_SNAKE_CASE` — `let maxDurationSeconds = 300.0`.
-- **Enums**: type in `UpperCamelCase`, cases in `lowerCamelCase` — `enum TranscriptSource { case speech, whisper, none }`.
 - **File names**: match the primary type name — `DiaryEntry.swift` contains `struct DiaryEntry`.
 - **Avoid abbreviations** unless they are standard API terms — `transcript`, not `xcpt`.

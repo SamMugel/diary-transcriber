@@ -1,3 +1,3 @@
 # Ralph: Fresh Context Each Iteration
 
-Design as if the active context window resets between iterations. Do not rely on conversation memory; persist all progress, learnings, and plans to files on disk (`PRD/`, `build-plan.md`, `IMPLEMENTATION_PLAN.md`, `AGENTS.md`). Each session re-reads these files to orient itself.
+Design as if the active context window resets between iterations. All progress, learnings, and plans persist to files on disk (`IMPLEMENTATION_PLAN.md`, `PRD/`, `AGENTS.md`). Each session re-reads these files to orient itself. When a bug or issue is discovered, document it in `IMPLEMENTATION_PLAN.md` immediately — even if unrelated to the current task.

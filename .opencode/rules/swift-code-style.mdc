@@ -7,12 +7,10 @@ alwaysApply: false
 
 # Swift Code Style
 
-Write clean, scannable Swift code.
+Clean, scannable Swift code.
 
-- **Limit line length to 100 characters.**
 - **Organize imports in three groups, alphabetized within each:** (1) standard library, (2) project modules, (3) test-only dependencies. Separate groups with blank lines.
 - **Insert one blank line between unrelated functions/types.** No blank line between a type's properties and its initializer.
-- **Indent with 4 spaces.** No tabs, no trailing whitespace, ensure final newline.
 - **Use `// MARK: -` to divide types into sections:** `Lifecycle`, `Actions`, `Private`.
 - **Order members within a type:** static constants → stored properties → initializer → public methods → private methods → private extensions.
 - **Do not use `// TODO:` without an owner** — format as `// TODO(yourname): description`.
