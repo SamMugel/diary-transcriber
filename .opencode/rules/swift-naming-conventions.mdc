@@ -1,0 +1,27 @@
+---
+description: Naming conventions for types, functions, variables, and constants
+globs:
+  - "**/*.swift"
+alwaysApply: false
+---
+
+# Swift Naming Conventions
+
+Use descriptive, self-documenting identifiers following Swift's standard conventions.
+
+- **Types** (classes, structs, enums, protocols, typealiases): `UpperCamelCase`.
+  - Example: `DiaryEntry`, `AudioRecorder`, `TranscriptSource`.
+- **Functions and methods**: `lowerCamelCase`. Use verbs; the name describes the action.
+  - Example: `func startRecording()`, `func transcribe(at audioURL: URL)`.
+- **Variables and properties**: `lowerCamelCase`.
+  - Example: `var liveTranscript: String`, `let outputURL: URL`.
+- **Constants**: `lowerCamelCase`. Do not use `UPPER_SNAKE_CASE` — Swift reserves that for module-scoped constants and the community has moved away from it.
+  - Example: `let maxDurationSeconds = 300.0`, `let defaultFolder = "~/Documents/Diary"`.
+- **Enums and cases**: types in `UpperCamelCase`, cases in `lowerCamelCase`.
+  - Example: `enum TranscriptSource { case speech, whisper, none }`.
+- **File names**: match the primary type name exactly.
+  - `DiaryEntry.swift` contains `struct DiaryEntry`.
+- **Avoid abbreviations** unless the abbreviation is a standard API term.
+  - `transcript`, not `xcpt`. `audioURL`, not `aURL`.
+- **Generic type parameters**: use single uppercase letters for generic placeholders.
+  - `func transcribe<T: Codable>(_ item: T)`; for multiple constraints use descriptive names like `Element` or `ResultType`.

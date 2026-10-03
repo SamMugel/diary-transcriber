@@ -1,0 +1,37 @@
+---
+description: Code style: line length, import organization, blank lines, trailing whitespace
+globs:
+  - "**/*.swift"
+alwaysApply: false
+---
+
+# Swift Code Style
+
+Write clean, scannable Swift code.
+
+- **Limit line length to 100 characters.** Swift treats the backslash + newline as continuation for operators and function calls; use it sparingly.
+- **Organize imports in three groups separated by blank lines:**
+  1. Standard library (`import Foundation`, `import AVFoundation`)
+  2. Project modules (`import DiaryTranscriber`)
+  3. Test-only dependencies (in test files)
+  - Alphabetize within each group.
+- **Use one `import` per line.** Do not group multiple modules on one import line.
+- **Insert one blank line between unrelated functions/types.** Insert no blank line between a type's property declaration and its initializer.
+- **Do not leave trailing whitespace on any line.** Set your editor's "trim trailing whitespace on save" and "ensure final newline" to true.
+- **Indent with 4 spaces.** Do not use tabs.
+- **Place opening braces on the same line** as the declaration — K&R / Swift style. `func foo() {` not `func foo()\n{`.
+- **No semicolons** unless required (rare; only when two statements share a line, which is itself an anti-pattern).
+- **Use `// MARK: -` to divide types into sections:**
+  ```swift
+  // MARK: - Lifecycle
+  // MARK: - Actions
+  // MARK: - Private
+  ```
+- **Order members within a type:**
+  1. Static constants (`static let`, `static final`)
+  2. Stored properties
+  3. Initializer
+  4. Public methods
+  5. Private methods
+  6. `private` extensions
+- **Do not use `// TODO:` without an owner.** Format as `// TODO(yourname): description` and assign a ticket.

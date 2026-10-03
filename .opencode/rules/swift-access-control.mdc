@@ -1,0 +1,23 @@
+---
+description: Access control and encapsulation: public surface, private internals, internal module boundaries
+globs:
+  - "**/*.swift"
+alwaysApply: false
+---
+
+# Swift Access Control
+
+Encapsulate aggressively; expose only what callers need.
+
+- **Default to `private`** for all properties, methods, and nested types of a type. Promote to `internal` or `public` only when a caller requires it.
+- **Use `public` for the module's documented surface** (entry-point types, methods used by other modules). Use `internal` for helpers shared within the package but not part of the API.
+- **Make stored properties `private` and expose computed read-only views via getters when mutation should be contained.**
+  ```swift
+  private(set) var entries: [DiaryEntry] = []   // external read-only
+  ```
+- **Mark immutable values `let` at the point of declaration.** `var` without a clear mutation site is a smell.
+- **Prefer `struct` over `class` for value-like models.** `class` should mean "shared mutable identity" — if there's no identity, use `struct`.
+- **Never expose `Any` in a public API.** If generic variance cannot be expressed in the type system, redesign the surface.
+- **Prefer `protocol` for dependency injection**, not concrete types. The view layer should depend on `DiaryStoreProtocol`, not `DiaryStore`.
+- **Mark types `final` by default.** Only mark `open` if subclasses are designed-for — `final` prevents accidental override and enables devirtualization.
+- **Group related `private` extensions** in the same file, one extension per concern, to keep a type's implementation organized without leaking internals.
