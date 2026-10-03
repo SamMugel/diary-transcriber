@@ -1,0 +1,56 @@
+---
+description: Convention for AI Intent comments — structured inline notes that give AI agents context without reading full specs
+globs:
+  - "**/*.swift"
+alwaysApply: false
+---
+
+# Swift AI Intent Snippets
+
+Leave structured notes to AI agents directly in code as comments. An AI Intent snippet communicates the *why* behind a non-obvious block so an agent editing the file has immediate context without re-reading the specs.
+
+## When to add one
+
+- The code implements a non-obvious decision from `specs/decisions.md`.
+- A constraint exists that an AI might unknowingly break (e.g., "must not call on main thread").
+- A workaround or temporary pattern is in place.
+- The code's *intent* differs from what the name/signature suggests.
+
+## When NOT to add one
+
+- The code is self-explanatory from its names and types.
+- The intent is already captured in a nearby doc comment.
+- The snippet would just paraphrase the line below it.
+
+## Strict structure
+
+Every AI Intent snippet uses exactly these fields, in this order, on consecutive lines, indented four spaces under the `// AI:` opener. No field is omitted; use `none` when a field is genuinely empty.
+
+```
+// AI:
+//   what: <one-line summary of what this code does or represents>
+//   why:  <rationale — why this approach, what it prevents, or what decision it implements>
+//   ref:  <D-XXXX from specs/decisions.md, or specs/ path, or none>
+```
+
+## Rules
+
+- **Exactly three fields:** `what`, `why`, `ref`. No extras, no reordering.
+- **Each field on its own line, indented four spaces** under `// AI:`.
+- **`what` and `why` are single-line.** If they don't fit in ~80 chars, the code is too complex for an inline note — extract a doc comment instead.
+- **`ref` cites the decision ID or specs path**, or `none` if no entry exists. Never paste free-form prose.
+- **One snippet per concern; place it directly above the code it describes.**
+- **Delete the snippet when the code becomes self-explanatory** — these are not permanent doc comments.
+
+## Example
+
+```swift
+// AI:
+//   what: Falls back to Whisper API when on-device Speech fails or returns low confidence.
+//   why:  Speech framework has no network fallback; hybrid model decided in D-0003.
+//   ref:  D-0003, specs/subsystems/transcription.md
+
+func transcribeFallback(at audioURL: URL) async throws -> String {
+    ...
+}
+```
