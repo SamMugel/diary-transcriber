@@ -1,0 +1,39 @@
+---
+description: Unit testing requirements: XCTest framework, file-per-type pairing, naming, isolation, and coverage
+globs:
+  - "**/*.swift"
+alwaysApply: false
+---
+
+# Swift Testing
+
+Write unit tests for all public types and non-trivial logic.
+
+- **Use `XCTest` as the sole testing framework.** No third-party frameworks (Quick, Nimble) — the project ships with zero external test dependencies.
+- **One test file per public type**, named `<TypeName>Tests.swift`, placed in a parallel `Tests/` directory that mirrors the source tree:
+  ```
+  Sources/DiaryTranscriber/AudioRecorder.swift
+  Tests/DiaryTranscriberTests/AudioRecorderTests.swift
+  ```
+- **Name test methods `test<Method>_<Scenario>_<ExpectedResult>`** so failures read as sentences in the test runner output:
+  ```swift
+  func testStartRecording_withoutMicPermission_throwsPermissionDenied() throws { }
+  func testLoadEntries_whenManifestMissing_returnsEmptyArray() throws { }
+  ```
+- **Mark view-model and UI-adjacent test classes `@MainActor`** — SwiftUI state mutations must happen on the main thread:
+  ```swift
+  @MainActor
+  final class TimelineViewModelTests: XCTestCase { }
+  ```
+- **Inject dependencies via protocols and substitute mocks/fakes in tests.** Tests must not hit the network, filesystem outside `tmp/`, or hardware (microphone, speech recognizer). Every external dependency has a test double:
+  ```swift
+  final class FakeTranscriber: TranscriptionService {
+      var result: String
+      func transcribe(at url: URL) -> AsyncStream<TranscriptUpdate> { ... }
+  }
+  ```
+- **Use `setUp()` / `tearDown()` for fixture creation and cleanup.** Create temp files under `URL(fileURLWithPath: NSTemporaryDirectory())` and delete in `tearDown`.
+- **Assert with `XCTAssertEqual`, `XCTAssertThrowsError`, `XCTAssertNil` / `XCTAssertNotNil`.** Prefer specific matchers over `XCTAssertTrue(bool)` so failure messages pinpoint the condition.
+- **Prefer `XCTestCase` over `XCTestSuite` for grouping.** Group logically related tests with `// MARK: -` sections inside a single test class rather than splitting into multiple `XCTestSuite` files.
+- **Do not test private/internal implementation details.** Test behavior through the public API. If a private method needs testing, extract it into an internal type and test that.
+- **Run `swift test` (or `xcodebuild test`) before committing.** The build plan (Phase 3) wires this into CI via a pre-merge check; tests should pass locally before push.
