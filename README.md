@@ -7,12 +7,10 @@ can browse and replay.
 ## Status
 
 **In design.** The app described below is the target product. Spec documents
-under [`specs/`](specs/) define the full vision, decisions, architecture, and
-subsystem contracts. The code currently in this repository is a **legacy CLI
-webcam recorder** (see [Legacy CLI](#legacy-cli-recorder-still-in-repo)) and
-will be removed once the SwiftUI app is built.
+under [`specs/`](specs/) — indexed in [SPECS.md](SPECS.md) — define the full
+vision, decisions, architecture, and subsystem contracts.
 
-- ✅ Product vision finalized — see [`specs/product-vision.md`](specs/product-vision.md).
+- ✅ Product vision finalized — [`specs/product-vision.md`](specs/product-vision.md).
 - ✅ Architecture & decisions logged — [`specs/architecture.md`](specs/architecture.md), [`specs/decisions.md`](specs/decisions.md).
 - ✅ Build plan & phases — [`specs/build-plan.md`](specs/build-plan.md).
 - 🚧 Implementation: not started.
