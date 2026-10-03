@@ -9,22 +9,11 @@ alwaysApply: false
 
 Write code under Swift 6 strict concurrency (`-strict-concurrency=complete`).
 
-- **Prefer `async`/`await` over callbacks, continuations, or semaphore- blocking patterns.**
-  - Never call `semaphore.wait()` on a thread that could be the main thread.
-- **Mark types that cross concurrency boundaries as `Sendable` or `@Sendable`.**
-  - All `Codable` model structs should be `struct` with `Sendable` conformance: `struct DiaryEntry: Hashable, Codable, Sendable`.
-  - Closures passed across tasks should be `@Sendable`.
-- **Use `actor` for mutable shared state.**
-  - `public actor DiaryStore` for storage; all access is serialized through the actor's mailbox.
-  - `public actor AudioRecorder` for recording control.
-  - Never protect mutable state with `DispatchQueue` and a `lock`; use `actor` instead.
-- **Run blocking I/O off the main thread.**
-  - File reads (`FileManager.default.contents`), `URLSession` uploads, and `AVFoundation` initialization belong in detached `Task` blocks or actor methods.
-- **`@MainActor` for all SwiftUI view-models and UI-binding properties.**
-  - Only immutable snapshots cross from actor to view-model. The view-model receives a copy, never a reference to actor-owned state.
-- **Avoid `DispatchQueue.main.async` when an `async` context can reach `@MainActor` directly.**
-  - Use `await MainActor.run { ... }` or scope the function as `@MainActor`.
-- **Do not create unstructured fire-and-forget tasks without a lifecycle owner.**
-  - Store `Task` handles in the owning view-model or actor; cancel them in `deinit` or on view dismissal.
-- **Prefer `AsyncStream` for sending incremental updates (transcript deltas, recording progress) from a producer actor to a `@MainActor` consumer.**
-  - `func transcribe(at url: URL) -> AsyncStream<TranscriptUpdate>`.
+- **Prefer `async`/`await` over callbacks or semaphore-blocking patterns.** Never call `semaphore.wait()` on a thread that could be the main thread.
+- **Mark types crossing concurrency boundaries as `Sendable`.** All `Codable` model structs: `struct DiaryEntry: Hashable, Codable, Sendable`. Closures passed across tasks: `@Sendable`.
+- **Use `actor` for mutable shared state** — `public actor DiaryStore`, `public actor AudioRecorder`. Never protect mutable state with `DispatchQueue` + lock.
+- **Run blocking I/O off the main thread** — file reads, `URLSession` uploads, `AVFoundation` initialization belong in detached `Task` blocks or actor methods.
+- **Scope all SwiftUI view-models and UI-binding properties as `@MainActor`.** Only immutable snapshots cross from actor to view-model — never a reference to actor-owned state.
+- **Avoid `DispatchQueue.main.async`** when an `async` context can reach `@MainActor` directly via `await MainActor.run { ... }`.
+- **Store `Task` handles in the owning view-model or actor; cancel in `deinit` or on view dismissal.** No unstructured fire-and-forget tasks.
+- **Prefer `AsyncStream` for incremental updates** (transcript deltas, recording progress) from a producer actor to a `@MainActor` consumer: `func transcribe(at url: URL) -> AsyncStream<TranscriptUpdate>`.

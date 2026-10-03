@@ -9,23 +9,20 @@ alwaysApply: false
 
 Prevent retain cycles in ARC-managed code.
 
-- **Always include an explicit capture list `[weak self]` in closures that outlive the enclosing type.**
+- **Include `[weak self]` in any closure that outlives the enclosing type.**
   ```swift
   DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
       self?.stop()
   }
   ```
-- **Use `self` (strong capture) only when the closure is guaranteed to execute before the owner is deallocated** (synchronous `map`, `filter`, `sortedBy`, etc.).
-- **Avoid capturing an `actor` in a long-lived `Task` without a cancellation strategy.** The captured actor keeps the task alive.
-- **In `async` functions, prefer `guard let self` after `[weak self]` capture:**
+- **Use strong `self` only when the closure is guaranteed to execute before deallocation** (synchronous `map`, `filter`, `sortedBy`).
+- **In `async` functions, `guard let self` after `[weak self]`:**
   ```swift
   func doWork() async { [weak self] in
       guard let self else { return }
       await self.recorder.stop()
   }
   ```
-- **Do not store strong references to child view-models in parent view-models** when the child also references the parent. Break the cycle with `weak` or restructure ownership.
-- **Use `Subscribers.Sink` / `AsyncStream` rather than long-lived `Subscription🔔` when only a short `for await` loop is needed.**
+- **Do not store strong references to child view-models in parent view-models when the child also references the parent.** Break the cycle with `weak` or restructure ownership.
 - **Prefer value types (`struct`) for cancellable SwiftUI `@State`** — they're copied, not retained, avoiding cycles entirely.
-- **Run a Leak Detector test** for each `@StateObject` type: spawn a weak reference, trigger dismissal, and assert `nil` within 3 seconds.
 - **Do not create circular references between delegates and their owners.** `AVCaptureFileOutputRecordingDelegate` should be the `Recorder` itself (not a separate object holding a strong reference back to it).

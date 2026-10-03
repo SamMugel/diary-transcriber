@@ -9,26 +9,11 @@ alwaysApply: false
 
 Leverage the type system to push more checks to compile time.
 
-- **Avoid `Any` in production code.** Use generics or an `enum` (discriminated union) instead. `Any` forces casts and hides errors.
-- **Prefer explicit type annotations on public APIs; rely on inference for local variables:**
-  ```swift
-  public func transcribe(at audioURL: URL) -> AsyncStream<TranscriptUpdate>  // explicit
-  let result = await store.entries()   // inferred — fine
-  ```
-- **Use generics to keep functions reusable**:
-  ```swift
-  func loadJSON<T: Decodable>(_ url: URL) async throws -> T
-  ```
-- **Use `associatedtype` in protocols** when the concrete type is determined by the implementor. Avoid forcing `Any` on the consumer.
-- **Use phantom types (zero-byte `enum` markers) to distinguish values with the same underlying type but different semantics.**
-  ```swift
-  private enum EntryIDMarker {}
-  public struct EntryID: RawRepresentable, Hashable, Sendable {
-      public let rawValue: UUID
-      // marker = EntryIDMarker
-  }
-  ```
-- **Prefer `Result<T, E>` over `(T?, Error?)` tuples.** The tuple forces callers to handle both-nil and both-present edge cases, which the type system doesn't express.
-- **Do not use `is`/`as` casts to replace polymorphism.** If you find yourself branching on a concrete type with `as`, introduce a protocol.
-- **Use `@unchecked Sendable` only when provably safe** — never to silence a warning without documentation of the safety reasoning.
-- **Avoid `@objc` and `NSObject` subclasses except for framework interop.** Pure Swift types are preferred.
+- **Avoid `Any` in production code.** Use generics or an `enum` (discriminated union) instead — `Any` forces casts and hides errors.
+- **Prefer explicit type annotations on public APIs; rely on inference for local variables.**
+- **Use generics to keep functions reusable:** `func loadJSON<T: Decodable>(_ url: URL) async throws -> T`.
+- **Use `associatedtype` in protocols** when the concrete type is determined by the implementor.
+- **Prefer `Result<T, E>` over `(T?, Error?)` tuples** — the tuple forces callers to handle impossible edge cases.
+- **Do not use `is`/`as` casts to replace polymorphism.** If you branch on a concrete type, introduce a protocol.
+- **Use `@unchecked Sendable` only when provably safe** — never to silence a warning without documenting why.
+- **Avoid `@objc` and `NSObject` subclasses except for framework interop.**

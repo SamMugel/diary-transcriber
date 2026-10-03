@@ -9,30 +9,11 @@ alwaysApply: false
 
 Serialize structs to/from JSON with minimal boilerplate.
 
-- **Prefer `public struct SomeModel: Codable, Sendable` with `Hashable`/`Equatable` when the struct is an immutable value type.** Conformance is automatic in Swift 6 for structs whose properties are all `Codable`.
-- **Use `CodingKeys` only when the JSON key differs from the Swift property name** — do not duplicate the key list for a model that maps 1:1.
-  ```swift
-  enum CodingKeys: String, CodingKey {
-      case startedAt
-      case durationSeconds
-      case audioPath
-      case transcriptPath
-      case source
-  }
-  ```
-- **Handle JSON dates with `ISO8601DateFormatter` set with `.withInternetDateTime`:**
-  ```swift
-  let decoder = JSONDecoder()
-  decoder.dateDecodingStrategy = .iso8601
-  ```
-- **Decode defensively against missing or malformed fields** by making optional fields `Optional<...>` in the model, and providing fallback:
-  ```swift
-  init(from decoder: Decoder) throws {
-      let c = try decoder.container(keyedBy: CodingKeys.self)
-      text = try c.decodeIfPresent(String.self, forKey: .text) ?? ""
-  }
-  ```
-- **Prefer explicit `encode(to:)` / `init(from:)` over `Sourcery` / `@Codable` markers** if even one field requires custom logic — keeps the conformance in one place.
-- **Do not encode `URL` as a custom type.** `URL` is already `Codable`; it round-trips as a String. Encode path strings using `URL.standardizedFileURL`.
-- **Never embed absolute paths in serialized model data** when the files might be relocated. Use paths relative to a known base, and resolve with `baseURL.appending(path:)` when loading.
-- **Pin the schema version in the encoded JSON** (e.g., `"schemaVersion": 1`) so future model migrations can branch on the stored schema.
+- **Prefer `public struct SomeModel: Codable, Sendable` with `Hashable`/`Equatable` for immutable value types.** Conformance is automatic when all properties are `Codable`.
+- **Use `CodingKeys` only when a JSON key differs from the Swift property name.** Do not duplicate the key list for a 1:1 mapping.
+- **Handle dates with `.iso8601` strategy:** `decoder.dateDecodingStrategy = .iso8601`.
+- **Decode defensively** — make optional fields `Optional<...>` and provide fallback with `decodeIfPresent` + `?? ""`.
+- **Prefer explicit `encode(to:)` / `init(from:)` when any field needs custom logic** — keeps conformance in one place.
+- **`URL` is already `Codable`** — do not wrap it as a custom type. Use `URL.standardizedFileURL`.
+- **Never embed absolute paths in serialized data.** Use paths relative to a known base, resolve with `baseURL.appending(path:)` when loading.
+- **Pin the schema version** (e.g., `"schemaVersion": 1`) so future migrations can branch on the stored schema.

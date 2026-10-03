@@ -13,21 +13,13 @@ Use typed, descriptive errors throughout the stack.
   ```swift
   enum RecorderError: LocalizedError {
       case permissionDenied(String)
-      case noDevice(String)
       case recordingFailed(underlying: Error)
-      // ...
       var errorDescription: String? { /* ... */ }
   }
   ```
-- **Throw errors early; never pass a sentinel value or silently return on failure.**
-- **Prefer `throws` functions over returning `Result<T, E>` when the caller's only sensible action is propagate or handle-and-recover.** Use `Result` when callers commonly branch on success vs. failure in a single expression.
-- **Catch only the specific error you intend to handle.** Do not write bare `catch { }` — it swallows bugs.
-- **Do not catch and re-throw the same error with no added context.** If you wrap an error, add information:
-  ```swift
-  do { try await recorder.start() }
-  catch let error as RecorderError { throw error }       // rethrow as-is
-  catch { throw RecorderError.recordingFailed(underlying: error) }
-  ```
-- **Expose user-facing messages via `errorDescription`, NOT `debugDescription`.** Internal diagnostics should be separate from user-presentable strings.
-- **Do not force-unwrap the result of a `throws` call.** `try` and `guard` are mandatory; `try!` should only exist in tests for known-good constants.
-- **Log error context before propagation if the stack does not already capture it.** Include file, function, and key operand values in diagnostic logs.
+- **Throw early; never pass sentinel values or silently return on failure.**
+- **Prefer `throws` over `Result<T, E>` when the caller's only sensible action is propagate or recover.** Use `Result` when callers commonly branch on success vs. failure inline.
+- **Catch only the specific error you intend to handle.** No bare `catch { }`.
+- **When wrapping an error, add context** — do not rethrow verbatim without information.
+- **Expose user-facing messages via `errorDescription`, not `debugDescription`.**
+- **`try!` should only exist in tests for known-good constants.**

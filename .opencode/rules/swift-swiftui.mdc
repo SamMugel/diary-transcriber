@@ -9,31 +9,18 @@ alwaysApply: false
 
 Build the UI declaratively; keep views dumb; push state into view-models.
 
-- **Use `@Observable` (Swift 6) for view-models, NOT `ObservableObject` + `@Published`**:
+- **Use `@Observable` (Swift 6) for view-models, not `ObservableObject` + `@Published`:**
   ```swift
-  @Observable
-  @MainActor
+  @Observable @MainActor
   final class TimelineViewModel {
       var entries: [DiaryEntry] = []
-      var selectedEntry: DiaryEntry?
   }
   ```
-- **Use `@State` for view-local, short-lived state**; `@Binding` for a child's dependency on a parent's state; `@Environment` for cross-cutting singletons (services, settings).
-- **Mark view-models `@MainActor` at the class level**, not per function. All state mutations must happen on the main thread.
-- **Inject dependencies via constructor parameters, NOT `@EnvironmentObject`**. In Swift 6:
-  ```swift
-  @State private var vm = TimelineViewModel(store: store)
-  ```
-- **View bodies must be pure**: do synchronous side effects in `.onAppear` or `.task`. The `some View { ... }` block must return a `View` tree, not start work.
-- **Prefer `NavigationStack` over `NavigationLink`-based push when the app needs programmatic back:** pass a `path: Binding<[Route]>` and react to changes.
-- **Use `LazyVStack` / `List` for any collection that might exceed 50 rows.** Avoid `VStack` for long lists — it instantiates every child eagerly.
-- **Break large views into subview `private struct`s**: `TimelineRow`, `RecordingControls`, `TranscriptPanel` — each in its own file if >30 lines.
-- **Do not call `Task { @MainActor in ... }` inside `body`.** Use `.task { }` or `.task(id: someState) { }` modifier instead:
-  ```swift
-  .task(id: entry.id) {
-      transcript = try? await vm.loadTranscript(for: entry)
-  }
-  ```
-- **Cancel long-running `.task` automatically when the view disappears** — SwiftUI handles this for `.task(id:)` patterns.
-- **Prefer `if let`, `switch`, `for` in `ViewBuilder` over `if-else` chains.** Use `@ViewBuilder` only as a last resort when a `switch` produces more than ~5 cases.
-- **Use `.opacity` / `.animation(.default, value: someBool)` for state-driven transitions; avoid the imperative `.withAnimation` pattern.**
+- **Use `@State` for view-local state; `@Binding` for parent-dependent state; `@Environment` for cross-cutting singletons.**
+- **Mark view-models `@MainActor` at the class level.** All state mutations must happen on the main thread.
+- **Inject dependencies via constructor parameters, not `@EnvironmentObject`:** `@State private var vm = TimelineViewModel(store: store)`.
+- **View bodies must be pure.** Run side effects in `.onAppear` or `.task`, never inline in `body`.
+- **Use `.task(id: someState) { }` for async work tied to view lifecycle.** SwiftUI cancels it automatically on dismissal.
+- **Use `LazyVStack` / `List` for collections exceeding 50 rows.** Avoid `VStack` for long lists.
+- **Break large views into subview `private struct`s** (`TimelineRow`, `RecordingControls`), each in its own file if >30 lines.
+- **Prefer `if let`, `switch`, `for` in `ViewBuilder` over `if-else` chains.**

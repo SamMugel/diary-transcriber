@@ -9,22 +9,10 @@ alwaysApply: false
 
 Never jeopardize runtime safety with force-unwrapping.
 
-- **Do not use `!` (force-unwrap) in production code.** The only acceptable use is in `precondition` or `assert` for internal invariants that are provably non-nil by construction.
-- **Prefer `guard let` for early-return optional unwrapping.**
-  ```swift
-  guard let camera = selectDevice(.video, query: options.camera) else {
-      throw RecorderError.noDevice("camera")
-  }
-  ```
-- **Use `if let` when the unwrapped value is scoped to a branch and the function does not return on failure.**
-- **Use `??` (nil-coalescing) for defaulting.**
-  ```swift
-  let folder = settings.outputFolder ?? "~/Documents/Diary"
-  ```
+- **Do not use `!` (force-unwrap) in production code.** Acceptable only in `precondition`/`assert` for provably non-nil invariants.
+- **Prefer `guard let` for early-return unwrapping; `if let` when the value is scoped to a branch.**
+- **Use `??` for defaulting** — `let folder = settings.outputFolder ?? "~/Documents/Diary"`.
 - **Use optional chaining (`?.`) for call chains on possibly-nil values.**
-  ```swift
-  session.connection(with: .video)?.setOutputSettings(...)
-  ```
-- **Avoid `implicitlyUnwrappedOptional` (`var x: String!`) except in IBOutlets or framework-required patterns.** Any `!`-typed property is a latent crash.
-- **Return `nil` for "not found" / "no value" instead of sentinel values** (`-1`, empty string, `""`). Optionals are the correct "absent" signal.
-- **Use `try?` only when the error is truly irrelevant.** Prefer `try` with `catch` if the failure mode is actionable; prefer `Result` when recovery is expected.
+- **Avoid `implicitlyUnwrappedOptional` (`var x: String!`) except in IBOutlets.** Any `!`-typed property is a latent crash.
+- **Return `nil` for "not found" / "no value," never sentinel values** (`-1`, `""`).
+- **Use `try?` only when the error is truly irrelevant.** Prefer `do/catch` if the failure is actionable.
