@@ -43,41 +43,7 @@ will be removed once the SwiftUI app is built.
 ## Build & run
 
 *Not yet implemented.* See [`specs/build-plan.md`](specs/build-plan.md) for the
-phased build-out. Legacy build instructions below for reference only — they
-build the old CLI recorder, not the new app.
-
-## Legacy CLI recorder (still in repo)
-
-The repository currently contains a small command-line webcam + microphone
-recorder that predates the diary app vision. It is **not** the diary transcriber.
-
-| File | What it is |
-|---|---|
-| [`webcam-record.swift`](webcam-record.swift) | Single-file CLI Swift script. Records video + audio via AVFoundation to a `.mov` file. |
-| [`build.sh`](build.sh) | Compiles the CLI recorder with `swiftc`, embedding `Info.plist` into the binary so macOS permissions work. |
-| [`Info.plist`](Info.plist) | Minimal metadata + `NSCameraUsageDescription` / `NSMicrophoneUsageDescription`. |
-
-### Legacy usage (reference only)
-
-```bash
-./build.sh
-./webcam-record --list-devices
-./webcam-record -o recording.mov --duration 30
-```
-
-These files will be deleted at the end of Phase 3 of the build plan, once the
-SwiftUI app replaces them. They remain in git history for reference.
-
-## What stays from the legacy code
-
-- `NSMicrophoneUsageDescription` string → carries forward into the app bundle's
-  newer `Info.plist`.
-- The `selectDevice(...)` matching pattern (exact name / partial / unique ID)
-  → simplified to audio devices only.
-
-Everything else — the video recording, signal handlers, RunLoop, CLI argument
-parser — is superseded by the SwiftUI app. See
-[`specs/architecture.md` § Reuse plan](specs/architecture.md).
+phased build-out.
 
 ## Project layout
 

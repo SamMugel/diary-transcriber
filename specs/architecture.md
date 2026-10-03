@@ -85,19 +85,17 @@ Recording ──► TranscriptionService
 - `build.sh` is a thin wrapper that invokes the SwiftPM/Xcode target and copies
   the resulting `.app` to the repo root for ad-hoc testing.
 
-## Reuse plan for current code
+## Reuse plan for legacy code
 
-Only one piece of the existing code has known reuse value:
+The legacy CLI webcam recorder has been deleted from the repo. Two patterns
+from it carry forward into the SwiftUI app:
 
-| Existing | Reuse | Notes |
-|---|---|---|
-| `Info.plist` `NSMicrophoneUsageDescription` | ✅ Pattern | Carries forward into the app bundle's `Info.plist`. Camera description is dropped (audio-only — see `D-0002`). |
-| `requestPermission(...)` | ⚠️ Concept | Rewritten against async/await; the synchronous semaphore pattern does not fit SwiftUI. |
-| `selectDevice(...)` | ⚠️ Pattern | Simplified — only audio devices matter now. |
-| `AVCaptureMovieFileOutput` recording | ❌ Removed | Replaced by audio-only `AVAudioFileOutput` (or `AVAudioEngine` + `AVAudioFile`). |
-| `SIGINT`/`SIGTERM` handlers | ❌ Removed | UI lifecycle replaces signal handling. |
-| `RunLoop.main.run()` loop | ❌ Removed | `@main App` + SwiftUI scene replaces it. |
-| `webcam-record.swift` (whole file) | ❌ Removed | Lives in git history for reference until Phase 4 prunes it. |
+- `NSMicrophoneUsageDescription` string → the app bundle's `Info.plist`.
+- `selectDevice(...)` matching pattern (exact name / partial / unique ID) →
+  simplified to audio devices only.
+
+Everything else — video recording, signal handlers, RunLoop, CLI argument
+parser — is superseded by the SwiftUI app.
 
 ## Known risks
 

@@ -84,8 +84,7 @@ Legend:
 - **Status:** ✅ Accepted
 - **Decision:** Build a SwiftUI desktop app with a timeline (past entries) and
   recording flow. No CLI.
-- **Rationale:** A shareable personal app needs a native window, not a CLI. The
-  existing `webcam-record.swift` CLI is legacy reference until replaced.
+- **Rationale:** A shareable personal app needs a native window, not a CLI.
 - **Supersedes:** —
 
 ## D-0009 — No LLM post-processing

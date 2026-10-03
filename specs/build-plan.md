@@ -57,9 +57,6 @@ install.
 4. `.dmg` via `create-dmg` (or `productbuild`).
 5. Tests: `DiaryStoreTests`, `SpeechTranscriberTests` (mocked API).
 6. README rewritten as the user guide for the app (not the CLI recorder).
-7. Legacy `webcam-record.swift`, `build.sh`, and `Info.plist` (current root
-   copies) are deleted at the end of Phase 3 — they remain in git history as
-   reference.
 
 ## Phase 4 — Future (out of scope for v1)
 

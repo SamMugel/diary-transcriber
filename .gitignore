@@ -1,6 +1,3 @@
-# Legacy CLI recorder build output
-/webcam-record
-
 # macOS / Xcode
 .build/
 .swiftpm/

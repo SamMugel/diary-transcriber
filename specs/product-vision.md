@@ -33,8 +33,7 @@ are not technical.
 These are explicit non-goals. They are documented to prevent scope creep — any
 pr that adds them should be rejected unless `decisions.md` is updated first.
 
-- ❌ **No video recording.** Audio-only — the existing webcam recording code is
-  legacy reference and will be removed in Phase 1.
+- ❌ **No video recording.** Audio-only — see D-0002.
 - ❌ **No LLM post-processing.** No summaries, no themes, no mood detection, no
   weekly recaps. The transcript is the truth.
 - ❌ **No semantic search.** No embeddings, no "find me entries about work", no
