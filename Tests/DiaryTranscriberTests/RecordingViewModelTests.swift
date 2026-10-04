@@ -10,6 +10,7 @@ final class RecordingViewModelTests: XCTestCase {
         XCTAssertEqual(vm.elapsed, 0, "Initial elapsed should be 0")
         XCTAssertFalse(vm.isFinalizing, "isFinalizing should be false initially")
         XCTAssertFalse(vm.isRecording, "isRecording should be false initially")
+        XCTAssertEqual(vm.permissionMessage, "", "permissionMessage should be empty initially")
     }
 
     @MainActor

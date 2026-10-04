@@ -11,6 +11,7 @@ import AVFoundation
 
 enum RecorderError: LocalizedError {
     case permissionDenied(String)
+    case permissionTimeout
     case noDevice
     case cannotAddOutput
     case notRecording
@@ -20,6 +21,8 @@ enum RecorderError: LocalizedError {
         switch self {
         case .permissionDenied(let detail):
             "Microphone access denied: \(detail)"
+        case .permissionTimeout:
+            "Microphone permission request timed out. Grant access in System Settings → Privacy & Security → Microphone."
         case .noDevice:
             "No audio input device found."
         case .cannotAddOutput:

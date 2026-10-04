@@ -32,6 +32,9 @@ public struct RecordingView: View {
             header
             timer
             startStopButton
+            if !viewModel.permissionMessage.isEmpty {
+                permissionBanner
+            }
             transcriptArea
             if viewModel.isFinalizing {
                 finalizingIndicator
@@ -125,6 +128,35 @@ public struct RecordingView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .controlBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    // MARK: - Permission Banner
+
+    private var permissionBanner: some View {
+        VStack(spacing: 8) {
+            Text(viewModel.permissionMessage)
+                .font(.body)
+                .foregroundStyle(.orange)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Button("Open System Settings") {
+                openMicrophoneSettings()
+            }
+            .buttonStyle(.bordered)
+        }
+    }
+
+    private func openMicrophoneSettings() {
+        #if canImport(AppKit)
+        // AI: Open System Settings → Privacy & Security → Microphone using
+        //     a safe navigation URL; falls gracefully if the OS version
+        //     differs from expected.
+        let settingsURL = URL(
+            string: "x-apple.systempreferences:com.apple.preference.security?Microphone"
+        )
+        if let settingsURL {
+            NSWorkspace.shared.open(settingsURL)
+        }
+        #endif
     }
 
     // MARK: - Finalizing

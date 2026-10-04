@@ -27,6 +27,13 @@ final class PermissionManagerTests: XCTestCase {
         XCTAssertEqual(error.errorDescription, "No recording is active.")
     }
 
+    func testRecorderError_permissionTimeout_hasDescriptiveMessage() {
+        let error = RecorderError.permissionTimeout
+        XCTAssertNotNil(error.errorDescription)
+        XCTAssertTrue(error.errorDescription!.contains("timed out"))
+        XCTAssertTrue(error.errorDescription!.contains("System Settings"))
+    }
+
     func testRecorderError_recordingFailed_includesUnderlyingMessage() {
         let underlying = NSError(domain: "TestDomain", code: 42, userInfo: [
             NSLocalizedDescriptionKey: "Internal error"

@@ -40,16 +40,34 @@ enum PermissionManager {
 
     #if canImport(AVFoundation)
     private static func requestMicrophoneAccess() async throws -> Bool {
-        try await withCheckedThrowingContinuation { continuation in
-            AVCaptureDevice.requestAccess(for: .audio) { granted in
-                if granted {
-                    continuation.resume(returning: true)
-                } else {
-                    continuation.resume(throwing: RecorderError.permissionDenied(
-                        "Microphone access was denied in the permission prompt."
-                    ))
+        try await withThrowingTaskGroup(of: Bool.self) { group in
+            // AI: Race the permission callback against a 5-second timeout.
+            //     Whichever completes first wins; the loser is cancelled so the
+            //     continuation is always resumed exactly once.
+            group.addTask {
+                try await withCheckedThrowingContinuation { continuation in
+                    AVCaptureDevice.requestAccess(for: .audio) { granted in
+                        if granted {
+                            continuation.resume(returning: true)
+                        } else {
+                            continuation.resume(throwing: RecorderError.permissionDenied(
+                                "Microphone access was denied in the permission prompt."
+                            ))
+                        }
+                    }
                 }
             }
+
+            group.addTask {
+                try await Task.sleep(for: .seconds(5))
+                throw RecorderError.permissionTimeout
+            }
+
+            guard let result = try await group.next() else {
+                throw RecorderError.permissionTimeout
+            }
+            group.cancelAll()
+            return result
         }
     }
     #endif

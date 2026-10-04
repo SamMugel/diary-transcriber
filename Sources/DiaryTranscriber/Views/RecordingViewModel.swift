@@ -13,6 +13,7 @@ public final class RecordingViewModel {
     public var liveTranscript: String = ""
     public var elapsed: Double = 0
     public var isFinalizing = false
+    public var permissionMessage: String = ""
 
     private let recorder: AudioRecorder
     private(set) var handle: RecordingHandle?
@@ -38,6 +39,7 @@ public final class RecordingViewModel {
             startTimer()
         } catch {
             // Surface error to the view for display.
+            permissionMessage = error.localizedDescription
             liveTranscript = "Error: \(error.localizedDescription)"
         }
     }
