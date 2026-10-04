@@ -9,3 +9,34 @@
 - Reuse or update existing rules and skills; do not duplicate.
 - Do not create alternative rule or skill locations.
 - Preserve these conventions unless explicitly instructed otherwise.
+
+## Build commands
+
+- **Build:** `swift build`
+- **Test:** `swift test`
+- **Lint:** `swift build` (treat warnings as failures)
+- **Package:** `xcodebuild -scheme DiaryTranscriber -configuration Release build`
+
+## Toolchain
+
+- Swift 6+ with strict concurrency (`-strict-concurrency=complete`).
+- macOS 14+ (Sonoma) deployment target.
+- Xcode 16+.
+- Dependencies: Apple AVFoundation, Speech framework; OpenAI Whisper API via URLSession.
+
+## Source layout
+
+See `specs/architecture.md` for the canonical folder structure:
+
+```
+App/                  # @main App entry
+Sources/DiaryTranscriber/
+  Models/             # DiaryEntry, Transcript, TranscriptSource, TranscriptUpdate
+  Storage/            # DiaryStore, FileSystemWatcher
+  Recording/          # AudioRecorder, PermissionManager
+  Transcription/      # SpeechTranscriber, WhisperClient, TranscriptionService
+  Playback/           # AudioPlayer
+  Views/              # ContentView, EntryDetailView, RecordingView, SettingsView
+Resources/            # Info.plist, Assets.xcassets
+Tests/                # XCTest suites
+```
