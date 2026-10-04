@@ -10,27 +10,29 @@ import Observation
 
 @Observable
 @MainActor
-final class AudioPlayer {
+public final class AudioPlayer {
 
     private var player: AVAudioPlayer?
 
-    var isPlaying: Bool = false
-    var duration: Double = 0
-    var currentTime: Double = 0
+    public var isPlaying: Bool = false
+    public var duration: Double = 0
+    public var currentTime: Double = 0
 
-    var progress: Double {
+    public var progress: Double {
         guard duration > 0 else { return 0 }
         return min(currentTime / duration, 1.0)
     }
 
-    var timecode: String {
+    public var timecode: String {
         let total = Int(currentTime)
         let minutes = total / 60
         let seconds = total % 60
         return String(format: "%02d:%02d", minutes, seconds)
     }
 
-    func load(from url: URL) throws {
+    public init() {}
+
+    public func load(from url: URL) throws {
         stop()
         let p = try AVAudioPlayer(contentsOf: url)
         self.player = p
@@ -39,7 +41,7 @@ final class AudioPlayer {
         self.isPlaying = false
     }
 
-    func play() {
+    public func play() {
         guard let player, !isPlaying else { return }
         player.prepareToPlay()
         if player.play() {
@@ -48,13 +50,13 @@ final class AudioPlayer {
         }
     }
 
-    func pause() {
+    public func pause() {
         guard let player, isPlaying else { return }
         player.pause()
         isPlaying = false
     }
 
-    func togglePlayPause() {
+    public func togglePlayPause() {
         if isPlaying {
             pause()
         } else {
@@ -62,14 +64,14 @@ final class AudioPlayer {
         }
     }
 
-    func stop() {
+    public func stop() {
         player?.stop()
         isPlaying = false
         currentTime = 0
         stopTimer()
     }
 
-    func scrub(to progress: Double) {
+    public func scrub(to progress: Double) {
         guard let player else { return }
         let target = max(0, min(progress, 1.0)) * duration
         player.currentTime = target
@@ -103,7 +105,7 @@ final class AudioPlayer {
         }
     }
 
-    func cleanup() {
+    public func cleanup() {
         timer?.invalidate()
         timer = nil
     }
