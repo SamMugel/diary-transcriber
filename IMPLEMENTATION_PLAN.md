@@ -41,7 +41,7 @@ sorted by `Depends:`; within each level, sorted by `Priority` ascending.
 - [x] 03 diary-store
 - [x] 05 audio-recorder
 - [x] 06 speech-transcriber
-- [ ] 07 whisper-client
+- [x] 07 whisper-client
 - [ ] 11 content-view
 - [ ] 12 recording-view
 - [ ] 08 transcription-service

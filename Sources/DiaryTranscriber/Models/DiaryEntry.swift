@@ -6,7 +6,7 @@ import Foundation
 //         by manifest.json; paths are relative to the output folder for portability
 //   ref:  specs/storage.md, D-0005, D-0006
 
-public struct DiaryEntry: Hashable, Codable, Sendable {
+public struct DiaryEntry: Hashable, Codable, Sendable, Identifiable {
     public var id: UUID
     public var startedAt: Date
     public var durationSeconds: Double
