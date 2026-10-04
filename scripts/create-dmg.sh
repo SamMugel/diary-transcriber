@@ -11,7 +11,7 @@ PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BUILD_DIR="$PROJECT_ROOT/build/release"
 APP_NAME="DiaryTranscriber"
 VERSION="1.0.0"
-APP_PATH="$BUILD_DIR/Build/Products/Release/$APP_NAME.app"
+APP_PATH="$BUILD_DIR/$APP_NAME.app"
 DMG_PATH="$BUILD_DIR/${APP_NAME}-${VERSION}.dmg"
 
 if [ ! -d "$APP_PATH" ]; then

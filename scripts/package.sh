@@ -9,20 +9,31 @@ set -euo pipefail
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BUILD_DIR="$PROJECT_ROOT/build/release"
 APP_NAME="DiaryTranscriber"
+APP_PATH="$BUILD_DIR/$APP_NAME.app"
 
 echo "building $APP_NAME (Release)..."
 xcodebuild \
   -scheme "$APP_NAME" \
   -configuration Release \
+  -destination 'platform=macOS' \
   -derivedDataPath "$BUILD_DIR" \
-  build 2>&1 | tail -20
+  build 2>&1 | tail -5
 
-APP_PATH="$BUILD_DIR/Build/Products/Release/$APP_NAME.app"
+BINARY="$BUILD_DIR/Build/Products/Release/$APP_NAME"
 
-if [ ! -d "$APP_PATH" ]; then
-  echo "error: $APP_PATH not found after build"
+if [ ! -f "$BINARY" ]; then
+  echo "error: $BINARY not found after build"
   exit 1
 fi
+
+# Assemble .app bundle from the bare executable.
+echo "assembling $APP_NAME.app..."
+rm -rf "$APP_PATH"
+mkdir -p "$APP_PATH/Contents/MacOS"
+mkdir -p "$APP_PATH/Contents/Resources"
+
+cp "$BINARY" "$APP_PATH/Contents/MacOS/$APP_NAME"
+chmod +x "$APP_PATH/Contents/MacOS/$APP_NAME"
 
 # Copy Info.plist and icon into the app bundle.
 PLIST_SRC="$PROJECT_ROOT/Resources/Info.plist"
@@ -33,7 +44,6 @@ if [ -f "$PLIST_SRC" ]; then
 fi
 
 if [ -f "$ICON_SRC" ]; then
-  mkdir -p "$APP_PATH/Contents/Resources"
   cp "$ICON_SRC" "$APP_PATH/Contents/Resources/"
 fi
 
