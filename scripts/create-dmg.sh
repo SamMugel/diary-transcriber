@@ -19,6 +19,9 @@ if [ ! -d "$APP_PATH" ]; then
   exit 1
 fi
 
+# Remove any stale DMG from a previous run.
+rm -f "$DMG_PATH" "$BUILD_DIR/temp-${APP_NAME}.dmg"
+
 # Ensure .app is signed before packaging.
 if ! codesign --verify "$APP_PATH" 2>/dev/null; then
   echo "warning: $APP_PATH is not signed. Running adhoc sign..."
@@ -47,7 +50,7 @@ else
     "$TEMP_DMG"
 
   # Compress and finalize.
-  hdiutil convert "$TEMP_DMG" -format UDBZ -o "$DMG_PATH"
+  hdiutil convert "$TEMP_DMG" -format UDBZ -ov -o "$DMG_PATH"
   rm -f "$TEMP_DMG"
 fi
 
