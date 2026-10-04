@@ -75,7 +75,10 @@ public struct ContentView: View {
     @State private var viewModel: ListViewModel
     @State private var showSettings = false
 
+    private let store: DiaryStore?
+
     public init(store: DiaryStore? = nil) {
+        self.store = store
         self._viewModel = State(initialValue: ListViewModel(store: store))
     }
 
@@ -83,6 +86,11 @@ public struct ContentView: View {
         NavigationStack {
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .navigationDestination(for: DiaryEntry.self) { entry in
+                    EntryDetailView(
+                        viewModel: EntryDetailViewModel(entry: entry, store: store)
+                    )
+                }
                 .toolbar { toolbarContent }
         }
         .frame(minWidth: 720, minHeight: 540)
@@ -97,10 +105,17 @@ public struct ContentView: View {
         if viewModel.entries.isEmpty {
             EmptyState()
         } else {
-            List(viewModel.entries) { entry in
-                EntryRow(entry: entry)
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(viewModel.entries) { entry in
+                        NavigationLink(value: entry) {
+                            EntryRow(entry: entry)
+                        }
+                        .buttonStyle(.plain)
+                        Divider()
+                    }
+                }
             }
-            .listStyle(.sidebar)
         }
     }
 
@@ -172,6 +187,15 @@ public struct EntryRow: View {
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)
+
+                if !excerpt.isEmpty {
+                    Text(excerpt)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
         }
         .padding(.vertical, 4)
@@ -199,6 +223,13 @@ public struct EntryRow: View {
         let minutes = Int(entry.durationSeconds) / 60
         let seconds = Int(entry.durationSeconds) % 60
         return "\(minutes):\(String(format: "%02d", seconds))"
+    }
+
+    /// One-line transcript excerpt (first ~120 chars), truncated with ellipsis.
+    private var excerpt: String {
+        // No transcript text is available in the model; short placeholder.
+        // In production, this would read from the transcript file.
+        ""
     }
 }
 
