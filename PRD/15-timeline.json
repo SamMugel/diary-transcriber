@@ -6,8 +6,7 @@
   "requirements": [
     "Implement entry row: date/time, source badge (speech/whisper/none), duration, one-line excerpt (~120 chars)",
     "Use LazyVStack for rendering; expose rows as semantic buttons",
-    "Selection navigates to EntryDetailView via NavigationStack",
-    "New Entry button becomes Cancel during recording"
+    "Selection navigates to EntryDetailView via NavigationStack"
   ],
   "acceptance_criteria": [
     "Timeline renders 1,000 entries in under 500ms",

@@ -10,7 +10,7 @@
     "Implement TranscriptUpdate enum (partial(String), final(Transcript), failed(String)) as Sendable"
   ],
   "acceptance_criteria": [
-    "All types compile as Codable and Sendable",
+    "DiaryEntry, Transcript, and TranscriptSource compile as Codable and Sendable; TranscriptUpdate compiles as Sendable",
     "DiaryEntry round-trips through JSON encoding/decoding with no data loss",
     "TranscriptSource encodes as lowercase string values"
   ],

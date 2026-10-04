@@ -4,11 +4,9 @@
   "depends": ["core-models"],
   "status": "todo",
   "requirements": [
-    "Implement SpeechTranscriber as actor",
-    "Use SFSpeechRecognizer + SFSpeechURLRecognitionRequest for full-file transcription",
+    "Implement SpeechTranscriber actor with transcribe(at audioURL: URL) async throws -> Transcript using SFSpeechRecognizer + SFSpeechURLRecognitionRequest",
     "Ensure only one SFSpeechRecognizer instance exists at a time",
-    "transcribe(at audioURL: URL) async throws -> Transcript",
-    "Surface speechUnavailable when SFSpeechRecognizer is nil on device"
+    "Throw speechUnavailable when SFSpeechRecognizer is nil on device"
   ],
   "acceptance_criteria": [
     "Returns Transcript with source .speech on success",

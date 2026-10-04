@@ -5,10 +5,8 @@
   "status": "todo",
   "requirements": [
     "Implement PermissionManager as @MainActor helper",
-    "Check AVCaptureDevice.authorizationStatus(for: .audio)",
-    "Request access via AVCaptureDevice.requestAccess(for:) wrapped in withCheckedContinuation",
-    "Throw typed RecorderError.permissionDenied when denied or restricted",
-    "Return true when authorized"
+    "Check AVCaptureDevice.authorizationStatus(for: .audio); if notDetermined, request via AVCaptureDevice.requestAccess(for:) wrapped in withCheckedContinuation",
+    "Return true when authorized; throw RecorderError.permissionDenied when denied or restricted"
   ],
   "acceptance_criteria": [
     "Returns true when microphone is already authorized",

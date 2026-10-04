@@ -1,6 +1,6 @@
 # PRD Directory
 
-This directory holds Product Requirements Documents for the Diary Transcriber project. Each file is a Markdown document named `NN-<kebab-case>.md`, where `NN` is a two-digit priority/order number.
+This directory holds Product Requirements Documents for the Diary Transcriber project. Each file is a JSON document named `NN-<kebab-case>.json`, where `NN` is a two-digit priority/order number.
 
 The `ralph-prd-implementer` skill reads all files here, determines implementation order by dependency and priority, and spawns subagents to implement each PRD one at a time following Ralph Wiggum principles.
 
@@ -40,6 +40,6 @@ priority/order number.
 
 ## How to use
 
-1. Author each PRD as a separate Markdown file here.
+1. Author each PRD as a separate JSON file here.
 2. Run the `ralph-prd-implementer` skill — it will inventory, order, and implement them.
 3. Progress is tracked in `IMPLEMENTATION_PLAN.md` at the project root.

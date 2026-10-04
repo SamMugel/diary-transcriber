@@ -5,10 +5,9 @@
   "status": "todo",
   "requirements": [
     "Implement ContentView with WindowGroup 900×660 default, 720×540 minimum",
-    "Toolbar with New Entry primary button and Settings secondary button",
+    "Toolbar with New Entry primary button (calls VM startRecording(); becomes Cancel during recording) and Settings secondary button",
     "Display EmptyState when no entries exist",
-    "Implement ListViewModel as @MainActor @Observable with entries and isRecording",
-    "New Entry button calls VM startRecording()"
+    "Implement ListViewModel as @MainActor @Observable with entries and isRecording"
   ],
   "acceptance_criteria": [
     "Window opens at 900×660 and cannot be resized below 720×540",

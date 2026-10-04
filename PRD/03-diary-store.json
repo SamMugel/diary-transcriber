@@ -4,13 +4,12 @@
   "depends": ["core-models"],
   "status": "todo",
   "requirements": [
-    "Implement DiaryStore actor with init(folder: URL)",
+    "Implement DiaryStore actor with init(folder: URL) creating manifest.json (schemaVersion 1, folder, entries []) if absent",
     "Implement entries() returning [DiaryEntry] sorted newest-first by startedAt",
     "Implement append(entry: DiaryEntry) writing audio + transcript + metadata atomically via write-to-temp + osrename",
     "Implement update(entry: DiaryEntry) updating manifest.json in-place",
     "Implement delete(id: UUID) removing .m4a, .md, .json files and manifest row",
-    "Implement url(for:) and data(for:) resolving relative paths to absolute URLs",
-    "Create manifest.json with schemaVersion: 1, folder, and entries array"
+    "Implement url(for:) and data(for:) resolving relative paths to absolute URLs"
   ],
   "acceptance_criteria": [
     "append() atomically writes files and manifest.json via temp + rename",

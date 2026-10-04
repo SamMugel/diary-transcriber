@@ -4,10 +4,8 @@
   "depends": ["core-models"],
   "status": "todo",
   "requirements": [
-    "Implement WhisperClient as actor with init(apiKey: String)",
-    "POST to https://api.openai.com/v1/audio/transcriptions with model whisper-1",
-    "Use URLSession with 120s timeout, HTTPS only",
-    "transcribe(at audioURL: URL) async throws -> Transcript",
+    "Implement WhisperClient actor with init(apiKey: String) and transcribe(at:) returning Transcript",
+    "POST to https://api.openai.com/v1/audio/transcriptions with model whisper-1 via URLSession (120s timeout, HTTPS only)",
     "Throw WhisperClientError on non-2xx response",
     "Never log API key or audio contents"
   ],
