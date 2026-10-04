@@ -103,3 +103,18 @@ Legend: ✅ **Accepted** · 🟡 **Pending** · ⛫ **Superseded**
   where the flag default differs. An inline comment next to each
   `swiftLanguageMode(.v6)` setting records this choice in `Package.swift`.
 - **Supersedes:** — (refines D-0007)
+
+## D-0013 — Platform baseline: macOS 15.0+ (PRD 20)
+- **Date:** 2026-10-04 · **Status:** ✅ Accepted
+- **Decision:** Bump the macOS deployment target from 14.0 (Sonoma) to 15.0
+  (Sequoia) in `Package.swift`.
+- **Rationale:** PRD 20 (Recording Output Delegate Deadlock Fix) requires
+  replacing `@unchecked Sendable` fields with a `Mutex<DelegateState>` from the
+  Swift 6.0 `Synchronization` module. `Synchronization.Mutex` is part of the
+  Swift stdlib but is only present in the macOS 15.0+ ABI overlay; building
+  against `.macOS(.v14)` fails to link `Mutex` even under `.swiftLanguageMode(.v6)`.
+  The only way to satisfy the PRD's "no `@unchecked Sendable`" requirement
+  without a degraded fallback path is to bump the platform to 15.0. This leaves
+  older macOS 14 users unsupported until a back-port strategy is agreed; track
+  the trade-off in AGENTS.md's platform baseline.
+- **Supersedes:** — (refines D-0007, D-0010 platform-baseline wording)

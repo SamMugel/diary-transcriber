@@ -4,7 +4,10 @@ import PackageDescription
 let package = Package(
     name: "DiaryTranscriber",
     platforms: [
-        .macOS(.v14)
+        // AI: PRD 20 — bumped from macOS 14 to 15 because Synchronization.Mutex
+        //     (used to fix the RecordingOutputDelegate deadlock/data-race) is
+        //     only available in the macOS 15.0+ stdlib ABI overlay.
+        .macOS(.v15)
     ],
     products: [
         .executable(name: "DiaryTranscriber", targets: ["DiaryTranscriber"])

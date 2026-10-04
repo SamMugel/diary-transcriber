@@ -19,13 +19,13 @@ sorted by `Depends:`; within each level, sorted by `Priority` ascending.
 | 10 | 06 | speech-transcriber | 1 | 4 | core-models | done |
 | 11 | 07 | whisper-client | 1 | 4 | core-models | done |
 | 12 | 38 | strict-concurrency-explicit | 1 | 4 | project-setup | done |
-| 13 | 20 | recording-delegate-deadlock | 2 | 1 | audio-recorder | todo |
+| 13 | 20 | recording-delegate-deadlock | 2 | 1 | audio-recorder | done |
 | 14 | 21 | macos-microphone-permission | 2 | 1 | permission-manager, audio-recorder | todo |
 | 15 | 23 | recorder-stop-error-handling | 2 | 1 | audio-recorder | todo |
 | 16 | 11 | content-view | 2 | 3 | diary-store | todo |
 | 17 | 12 | recording-view | 2 | 4 | audio-recorder, speech-transcriber | todo |
-| 18 | 08 | transcription-service | 2 | 5 | speech-transcriber, whisper-client | todo |
-| 19 | 10 | file-system-watcher | 2 | 5 | diary-store | todo |
+| 18 | 08 | transcription-service | 2 | 5 | speech-transcriber, whisper-client | done |
+| 19 | 10 | file-system-watcher | 2 | 5 | diary-store | done |
 | 20 | 13 | entry-detail-view | 2 | 6 | audio-player, diary-store | todo |
 | 21 | 22 | recording-sheet-cancel-clear | 3 | 1 | recording-view | todo |
 | 22 | 24 | recording-timer-leak | 3 | 2 | recording-view | todo |

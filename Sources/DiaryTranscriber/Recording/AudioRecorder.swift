@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 #if canImport(AVFoundation)
 import AVFoundation
 #endif
@@ -178,16 +179,53 @@ public actor AudioRecorder {
 //   why:  stopRecording is async but completion is via delegate callback;
 //         CheckedContinuation bridges this per Swift concurrency rule 14
 //   ref:  specs/recording.md didFinishedRecordingTo callback
+//   note: PRD 20 — all shared state is held under a single Mutex<DelegateState>
+//         so the delegate is genuinely Sendable (no @unchecked Sendable) and the
+//         callback→await handoff no longer races. Pre-resume path: if the AV
+//         callback fires before waitForCompletion installs its continuation, the
+//         completion is stored in state and the next waitForCompletion resumes
+//         immediately rather than awaiting a continuation nobody will resume.
+//         Mutex (Swift 6.0 Synchronization) requires macOS 15+ at compile time,
+//         which matches the package's .macOS(.v15) baseline.
 
-private final class RecordingOutputDelegate: NSObject, AVCaptureFileOutputRecordingDelegate, @unchecked Sendable {
-    private var continuation: CheckedContinuation<Void, Never>?
+private final class RecordingOutputDelegate: NSObject, AVCaptureFileOutputRecordingDelegate, Sendable {
 
-    var captureError: Error?
+    // MARK: - State
 
-    @MainActor
+    // AI: State is ~Copyable because it holds a CheckedContinuation (itself
+    //     ~Copyable), and Sendable because Mutex<T> requires a Sendable T.
+    //     All mutable fields live here; nothing else in the class is mutable,
+    //     so the class is implicitly Sendable without @unchecked.
+    private struct DelegateState: ~Copyable, Sendable {
+        var didComplete: Bool = false
+        var captureError: Error?
+        var continuation: CheckedContinuation<Void, Never>?
+    }
+
+    private let state = Mutex(DelegateState())
+
+    // MARK: - Completion
+
+    var captureError: Error? {
+        state.withLock { $0.captureError }
+    }
+
     func waitForCompletion() async {
+        // AI: Install a continuation OR, if the callback already completed,
+        //     resume it immediately from stored state. Either way the
+        //     continuation is resumed exactly once — outside the mutex — so
+        //     we avoid re-acquiring the lock from the resumed coroutine.
         await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
-            self.continuation = cont
+            let toResume: CheckedContinuation<Void, Never>? =
+                state.withLock { s -> CheckedContinuation<Void, Never>? in
+                    if s.didComplete {
+                        // Pre-resume: callback fired first; nothing to install.
+                        return cont
+                    }
+                    s.continuation = cont
+                    return nil
+                }
+            toResume?.resume()
         }
     }
 
@@ -197,12 +235,18 @@ private final class RecordingOutputDelegate: NSObject, AVCaptureFileOutputRecord
         from connections: [AVCaptureConnection],
         error: Error?
     ) {
-        captureError = error
-
-        let cont = continuation
-        continuation = nil
-
-        cont?.resume()
+        // AI: Capture the result in state first, then resume any awaiting
+        //     continuation (or none, if waitForCompletion hasn't entered yet —
+        //     in which case the stored `didComplete` flag drives pre-resume).
+        let toResume: CheckedContinuation<Void, Never>? =
+            state.withLock { s -> CheckedContinuation<Void, Never>? in
+                s.captureError = error
+                s.didComplete = true
+                let cont = s.continuation
+                s.continuation = nil
+                return cont
+            }
+        toResume?.resume()
     }
 }
 #endif
