@@ -13,7 +13,7 @@ sorted by `Depends:`; within each level, sorted by `Priority` ascending.
 | 4 | 09 | audio-player | 0 | 5 | — | done |
 | 5 | 14 | settings-view | 0 | 6 | — | done |
 | 6 | 03 | diary-store | 1 | 2 | core-models | done |
-| 7 | 29 | transcript-settings-persistence | 1 | 2 | settings-view | todo |
+| 7 | 29 | transcript-settings-persistence | 1 | 2 | settings-view | done |
 | 8 | 30 | api-key-input-binding | 1 | 2 | settings-view | todo |
 | 9 | 05 | audio-recorder | 1 | 3 | permission-manager | done |
 | 10 | 06 | speech-transcriber | 1 | 4 | core-models | done |

@@ -62,6 +62,10 @@ public struct SettingsView: View {
         }
         .padding()
         .frame(minWidth: 420)
+        .onDisappear {
+            // AI: commit toggles to UserDefaults when the sheet closes, not per-keystroke; API key already persisted via Keychain / PRD 29
+            viewModel.save()
+        }
     }
 
     private func chooseFolder() {
