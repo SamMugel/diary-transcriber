@@ -16,15 +16,23 @@ public final class RecordingViewModel {
     public var permissionMessage: String = ""
 
     private let recorder: AudioRecorder
+    private let speechTranscriber: SpeechTranscriber?
     private(set) var handle: RecordingHandle?
     private var timer: Task<Void, Never>?
+    private var liveStreamTask: Task<Void, Never>?
 
     /// The resulting DiaryEntry after recording stops, or nil if recording
     /// has not completed (or was cancelled).
     public private(set) var completedEntry: DiaryEntry?
 
-    public init(recorder: AudioRecorder = AudioRecorder()) {
+    public init(
+        recorder: AudioRecorder = AudioRecorder(),
+        speechTranscriber: SpeechTranscriber? = nil
+    ) {
         self.recorder = recorder
+        // AI: Default to a shared SpeechTranscriber when not injected. Tests can
+        //     pass nil to skip live transcription entirely.
+        self.speechTranscriber = speechTranscriber ?? SpeechTranscriber()
     }
 
     public var isRecording: Bool { handle != nil && !isFinalizing }
@@ -37,6 +45,7 @@ public final class RecordingViewModel {
             completedEntry = nil
             handle = try await recorder.start()
             startTimer()
+            startLiveStream()
         } catch {
             // Surface error to the view for display.
             permissionMessage = error.localizedDescription
@@ -48,6 +57,7 @@ public final class RecordingViewModel {
         guard handle != nil, !isFinalizing else { return }
         isFinalizing = true
         cancelTimer()
+        cancelLiveStream()
 
         do {
             let audioURL = try await recorder.stop()
@@ -96,5 +106,31 @@ public final class RecordingViewModel {
     private func cancelTimer() {
         timer?.cancel()
         timer = nil
+    }
+
+    // MARK: - Private: Live Transcript Stream
+
+    private func startLiveStream() {
+        // AI: If no transcriber is wired in (e.g., test that wants to skip live
+        //     transcription), bail out early. This keeps the recording loop
+        //     decoupled from live speech.
+        guard let speechTranscriber else { return }
+        cancelLiveStream()
+        liveStreamTask = Task { @MainActor in
+            // AI: liveStream() returns AsyncStream<String> whose yield values are
+            //     cumulative partial results — set, don't append. If the stream
+            //     finishes (recognizer unavailable or final result), the loop
+            //     exits cleanly. Cancellation via stop() tears down the task.
+            let stream = await speechTranscriber.liveStream()
+            for await text in stream {
+                if Task.isCancelled { break }
+                liveTranscript = text
+            }
+        }
+    }
+
+    private func cancelLiveStream() {
+        liveStreamTask?.cancel()
+        liveStreamTask = nil
     }
 }

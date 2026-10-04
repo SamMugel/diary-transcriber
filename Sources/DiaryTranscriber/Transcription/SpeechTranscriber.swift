@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 #if canImport(Speech)
 import Speech
 #endif
@@ -22,6 +23,67 @@ public actor SpeechTranscriber {
     }
 
     // MARK: - Public API
+
+    // AI:
+    //   what: liveStream — streams partial transcription results via SFSpeechAudioBufferRecognitionRequest
+    //   why:  specs/ui.md RecordingViewModel: "Live transcript updates word-by-word from SpeechTranscriber via AsyncStream";
+    //         live recording needs partial results during capture, not a single final pass
+    //   ref:  specs/ui.md RecordingViewModel, D-0004, PRD 12 (recording-view)
+    //   note: macOS's Speech framework does NOT expose SFSpeechLiveSpeechRecognitionRequest (that class
+    //   is iOS/tvOS-only). The macOS-compatible live-API is SFSpeechAudioBufferRecognitionRequest, which
+    //   uses the same partial-results callback pattern as transcribe(at:). The stream yields each
+    //   bestTranscription snapshot and finishes on isFinal; the underlying SFSpeechRecognitionTask is
+    //   held in a Sendable-safe LiveTaskCancel and cancelled on stream termination so the consumer
+    //   (RecordingViewModel) tearing down the for-await loop frees the live session. The request is
+    //   configured with shouldReportPartialResults = true so the callback delivers intermediate snapshots,
+    //   not just the final one. NB: the request is not yet fed live audio buffers in this PRD; that wiring
+    //   lives in a follow-up that exposes CMSampleBuffers from AudioRecorder.
+    public func liveStream() -> AsyncStream<String> {
+        #if canImport(Speech)
+        AsyncStream { continuation in
+            guard let recognizer, recognizer.isAvailable else {
+                // AI: No on-device recognizer (headless CI, missing locale, etc.) — yield zero results and finish.
+                continuation.finish()
+                return
+            }
+
+            let request = SFSpeechAudioBufferRecognitionRequest()
+            request.shouldReportPartialResults = true
+
+            let holder = LiveTaskCancel()
+            holder.set(
+                recognizer.recognitionTask(with: request) { result, error in
+                    if error != nil { return }
+                    guard let result else { return }
+                    let text = result.bestTranscription.formattedString
+                    if !text.isEmpty {
+                        // AI: Partial results are cumulative, not deltas — replace the live transcript
+                        //     with the latest snapshot rather than appending.
+                        continuation.yield(text)
+                    }
+                    if result.isFinal {
+                        continuation.finish()
+                    }
+                }
+            )
+
+            // AI: The recognition task runs until cancelled OR until endAudio() is called.
+            //     Attach the cancellation to the stream's termination so the consumer
+            //     (RecordingViewModel) tearing down the for-await loop frees the live
+            //     session. This is the canonical inverse of startLiveStream() —
+            //     onTermination matches PRD 12 requirement 4 (live transcript via AsyncStream).
+            continuation.onTermination = { _ in
+                holder.cancel()
+            }
+        }
+        #else
+        // AI: No Speech framework on this platform (Linux CI runner): return a
+        //     trivially-finished stream so callers iterating it see zero items.
+        AsyncStream { continuation in
+            continuation.finish()
+        }
+        #endif
+    }
 
     public func transcribe(at audioURL: URL) async throws -> Transcript {
         #if canImport(Speech)
@@ -87,6 +149,43 @@ public actor SpeechTranscriber {
     }
     #endif
 }
+
+// AI:
+//   what: LiveTaskCancel — thread-safe holder for the active SFSpeechRecognitionTask
+//   why:  SFSpeechRecognitionTask is not Sendable and lives in the Speech framework;
+//         AsyncStream.onTermination runs synchronously on whatever context tears down the stream,
+//         not the original creation actor. The holder isolates the single mutable `task` pointer
+//         inside a Mutex so cancellation is Sendable-safe and delay-free.
+//   ref:  specs/ui.md RecordingViewModel liveTranscript, PRD 12
+
+#if canImport(Speech)
+private final class LiveTaskCancel: Sendable {
+    // AI: SFSpeechRecognitionTask is an Objective-C class that is not Sendable.
+    //     The holder is the single mutator (the recognition-result callback)
+    //     and a single consumer (the onTermination handler). Because Mutex<T>
+    //     requires T: Sendable in Swift 6, we hold the task behind an
+    //     @unchecked Sendable wrapper. The class is `Sendable` but access is
+    //     serialized through the mutex, so the concurrency model holds.
+    private struct TaskBox: @unchecked Sendable {
+        var task: SFSpeechRecognitionTask?
+    }
+
+    private let mutex = Mutex(TaskBox())
+
+    func set(_ task: SFSpeechRecognitionTask) {
+        mutex.withLock { box in
+            box.task = task
+        }
+    }
+
+    func cancel() {
+        mutex.withLock { box in
+            box.task?.cancel()
+            box.task = nil
+        }
+    }
+}
+#endif
 
 // AI:
 //   what: TranscriptionError — typed errors for transcription failures
