@@ -22,7 +22,7 @@ sorted by `Depends:`; within each level, sorted by `Priority` ascending.
 | 13 | 20 | recording-delegate-deadlock | 2 | 1 | audio-recorder | done |
 | 14 | 21 | macos-microphone-permission | 2 | 1 | permission-manager, audio-recorder | done |
 | 15 | 23 | recorder-stop-error-handling | 2 | 1 | audio-recorder | done |
-| 16 | 11 | content-view | 2 | 3 | diary-store | todo |
+| 16 | 11 | content-view | 2 | 3 | diary-store | done |
 | 17 | 12 | recording-view | 2 | 4 | audio-recorder, speech-transcriber | todo |
 | 18 | 08 | transcription-service | 2 | 5 | speech-transcriber, whisper-client | done |
 | 19 | 10 | file-system-watcher | 2 | 5 | diary-store | done |

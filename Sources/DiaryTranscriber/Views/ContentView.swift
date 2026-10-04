@@ -186,13 +186,23 @@ public struct ContentView: View {
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .primaryAction) {
             Button {
-                viewModel.startRecording()
+                // AI: PRD 11 — New Entry toggles to Cancel while recording so the
+                //     user can abort without hunting for a separate control.
+                if viewModel.isRecording {
+                    viewModel.cancelRecording()
+                } else {
+                    viewModel.startRecording()
+                }
             } label: {
-                Label("New Entry", systemImage: "mic.fill")
-                    .fontWeight(.semibold)
+                if viewModel.isRecording {
+                    Label("Cancel", systemImage: "xmark.circle.fill")
+                        .fontWeight(.semibold)
+                } else {
+                    Label("New Entry", systemImage: "mic.fill")
+                        .fontWeight(.semibold)
+                }
             }
-            .help("Start a new diary entry")
-            .disabled(viewModel.isRecording)
+            .help(viewModel.isRecording ? "Cancel the current recording" : "Start a new diary entry")
         }
 
         ToolbarItem(placement: .secondaryAction) {
