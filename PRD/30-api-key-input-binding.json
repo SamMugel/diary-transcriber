@@ -1,0 +1,22 @@
+{
+  "title": "API Key Input Binding",
+  "priority": 2,
+  "depends": ["settings-view"],
+  "status": "todo",
+  "requirements": [
+    "Add a local @State var apiKeyInput: String to SettingsView to buffer the field text; the SecureField binds to apiKeyInput, not to the Keychain-backed getter",
+    "Commit apiKeyInput to Keychain only on .onSubmit, .onDisappear, or via an explicit Save button — never on every keystroke",
+    "Remove the per-keystroke SecItemDelete → SecItemAdd flow from TranscriptSettings.apiKey get/set; apiKey loads once on SettingsView .onAppear into apiKeyInput",
+    "On SettingsView .onDisappear, if apiKeyInput differs from the last-loaded value, commit to Keychain (defensive guard; no duplicate-clipboard-characters)",
+    "Do not log or display the API key in plaintext"
+  ],
+  "acceptance_criteria": [
+    "Typing smoothly into the API key field does not cause freezes, duplicated characters, or desync between display and buffer",
+    "The saved Keychain value matches what was typed after navigation-away or Save",
+    "No per-keystroke SecItem operation is visible in Instruments / Time Profiler"
+  ],
+  "out_of_scope": [
+    "Password reveal toggle",
+    "Multi-account API keys"
+  ]
+}

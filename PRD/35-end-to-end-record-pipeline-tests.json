@@ -1,0 +1,22 @@
+{
+  "title": "End-to-End Record Pipeline Tests",
+  "priority": 3,
+  "depends": ["test-suites"],
+  "status": "todo",
+  "requirements": [
+    "Write a stub/fake AudioRecorder (conforming to an injected protocol) that returns a fixed small .m4a fixture file URL from stop() without requiring a real microphone",
+    "Write an integration test that drives RecordingViewModel through start() → brief wait → stop(), asserts completedEntry is non-nil, then calls ListViewModel.finishRecording(entry:) and asserts the resulting DiaryEntry appears in the timeline (store.entries())",
+    "Verify onCompleted is invoked with the persisted DiaryEntry and ListViewModel.isRecording resets to false",
+    "No real microphone, no real network: use fixture .m4a and a stubbed TranscriptionService that returns a deterministic TranscriptUpdate.final",
+    "Run in <2 seconds; mark @MainActor on the test class where applicable"
+  ],
+  "acceptance_criteria": [
+    "One end-to-end pipeline test in CI drives start→stop→finalize→persist and asserts a persisted DiaryEntry",
+    "Test runs in <2 seconds without microphone or network access",
+    "Test is isolated to a temp directory (NSTemporaryDirectory) and cleans up in tearDown"
+  ],
+  "out_of_scope": [
+    "Real SFSpeechRecognizer in CI",
+    "Live Whisper API calls"
+  ]
+}

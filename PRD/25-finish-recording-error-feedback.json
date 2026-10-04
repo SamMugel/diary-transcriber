@@ -1,0 +1,22 @@
+{
+  "title": "Finish-Recording Error Feedback",
+  "priority": 2,
+  "depends": ["content-view"],
+  "status": "todo",
+  "requirements": [
+    "Add user-facing error state to ListViewModel: a non-fatal error banner visibility flag `errorBanner: String?` and a support message string",
+    "Wrap moveItem and store.append calls in finishRecording with a do/catch that catches the specific Error; on failure, set errorBanner to \"Audio saved to ~/Documents, entry could not be saved: <errorDescription>\" — do not swallow with a bare catch",
+    "Add an error banner / toast to ContentView that renders errorBanner conditionally, with a Dismiss button that sets errorBanner = nil",
+    "Keep the moved-orphan audio path available for retry: surface a Retry button that re-attempts the failed append / setTranscript step; audio is not lost on failure",
+    "Make error state conform to LocalizedError conventions (errorDescription, not debugDescription)"
+  ],
+  "acceptance_criteria": [
+    "A failed append (disk full / empty URL / permission denied) shows a clear message naming the failure and the saved file location",
+    "The user can retry the failed persistence step without losing the original .m4a file",
+    "No bare catch { } blocks in ListViewModel.finishRecording"
+  ],
+  "out_of_scope": [
+    "Auto-offline retry queue",
+    "Crash report submission"
+  ]
+}

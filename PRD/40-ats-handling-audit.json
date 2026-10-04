@@ -1,0 +1,22 @@
+{
+  "title": "ATS Handling Audit",
+  "priority": 4,
+  "depends": ["whisper-client"],
+  "status": "todo",
+  "requirements": [
+    "Audit Resources/Info.plist NSAppTransportSecurity: confirm the exception for api.openai.com is present and scoped (NSAllowsArbitraryLoads=false); verify no broader exceptions",
+    "Ensure WhisperClient maps a TLS-rejected / network-unavailable response to a clear typed error: extend WhisperClientError with a networkUnavailable case (or whisperError(0) with errorDescription \"Network unavailable: transcription is offline\")",
+    "Surface the TLS / network failure to the user via the same error-banner pathway defined in finish-recording-error-feedback (not a silent hang or restated empty error): show \"Network unavailable: transcription failed\"",
+    "Disconnect from the network and run the transcription flow end-to-end (manual verification acceptable); assert a clear toast / banner rather than a silent hang",
+    "Document the ATS exception for openai.com as a known risk in specs/decisions.md or CODE_REVIEW_ISSUES-equivalent note: OpenAI may rotate endpoints without notice; if they do, this exception must be updated"
+  ],
+  "acceptance_criteria": [
+    "Disconnecting the network and running transcription yields a clear \"network unavailable\" toast/banner, not a silent hang",
+    "A TLS-rejected connection reports whisperError(0) (or networkUnavailable) with an errorDescription",
+    "ATS exceptions in Info.plist are scoped to api.openai.com only; NSAllowsArbitraryLoads is false"
+  ],
+  "out_of_scope": [
+    "Supporting backup Whisper-compatible endpoints",
+    "On-device model cache"
+  ]
+}

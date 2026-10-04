@@ -1,0 +1,21 @@
+{
+  "title": "ListViewModel Init Task Lifecycle",
+  "priority": 4,
+  "depends": ["content-view"],
+  "status": "todo",
+  "requirements": [
+    "Move the initial refresh Task out of ListViewModel.init (currently a discarded `Task { await refresh() }`) into ContentView.body via `.task { await vm.refresh() }` so SwiftUI auto-cancels it on disappear",
+    "Alternatively, store the Task handle in a private var `initTask` on ListViewModel and cancel it in a `teardown()` — but prefer the `.task` modifier on the view as the canonical approach",
+    "No unstructured fire-and-forget Task in init that can touch @Observable state after the view-model is deallocated",
+    "Preserve the initial-refresh behavior: the timeline is populated when ContentView first appears"
+  ],
+  "acceptance_criteria": [
+    "No leaked Task after window/frame destruction; @MainActor state is touched only from a visible view-model",
+    "The timeline still populates on first appearance",
+    "No task handle is discarded without storage or .task/lifecycle binding"
+  ],
+  "out_of_scope": [
+    "Background refresh polling",
+    "Pull-to-refresh"
+  ]
+}

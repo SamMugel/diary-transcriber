@@ -1,0 +1,21 @@
+{
+  "title": "Timeline Excerpt Preview",
+  "priority": 2,
+  "depends": ["diary-store", "content-view"],
+  "status": "todo",
+  "requirements": [
+    "Implement DiaryStore.excerpt(for entry: DiaryEntry, length: Int = 120) async throws -> String that reads the first `length` characters of the .md transcript via data(for:) or a direct FileManager read, returns an empty string for missing/empty transcript (not a crash)",
+    "Replace the literal `\"\"` in EntryRow.excerpt with a lazy-loaded preview from store.excerpt(for:) — cache the field on the row view-model to avoid re-reading on each redraw",
+    "Show truncated text with an ellipsis (U+2026) when the transcript exceeds the length; fit to <=1 line in the timeline row",
+    "For entries with source .none, the excerpt is empty and the row displays a placeholder like \"No transcript yet\""
+  ],
+  "acceptance_criteria": [
+    "Timeline rows for transcribed entries show a truncated transcript preview at <=1 line, around 120 chars max",
+    "Rows for untranscribed entries (source .none) show \"No transcript yet\" instead of an empty string",
+    "Scrolling a 1,000-entry timeline does not re-read every .md on every redraw (cached)"
+  ],
+  "out_of_scope": [
+    "Full-text search over excerpts",
+    "Snippet highlighting"
+  ]
+}

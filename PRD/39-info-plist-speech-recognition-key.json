@@ -1,0 +1,20 @@
+{
+  "title": "Info.plist Speech Recognition Key",
+  "priority": 4,
+  "depends": ["packaging"],
+  "status": "todo",
+  "requirements": [
+    "Add NSSpeechRecognitionUsageDescription to Resources/Info.plist with the value: \"Diary Transcriber uses speech recognition to transcribe your diary entries into text.\"",
+    "Verify the key is recognized by plutil — run `plutil -p Resources/Info.plist` and confirm the key is present in the final Info.plist",
+    "Ensure NSMicrophoneUsageDescription remains in the right bundle path — no regression to the existing key"
+  ],
+  "acceptance_criteria": [
+    "plutil confirms NSSpeechRecognitionUsageDescription is present in the final Info.plist",
+    "No system speech-recognition prompt appears without a rationale string",
+    "NSMicrophoneUsageDescription remains in the correct position"
+  ],
+  "out_of_scope": [
+    "Onboarding calls-to-action for the privacy keys",
+    "Localization of the rationale strings"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "title": "Recording Timer Leak Fix",
+  "priority": 2,
+  "depends": ["recording-view"],
+  "status": "todo",
+  "requirements": [
+    "Cancel RecordingViewModel.startTimer()'s spawned Task on all teardown paths, not only on stop(): add a teardown() method on RecordingViewModel that calls cancelTimer() (and flushes any in-flight transcription if present)",
+    "Call viewModel.teardown() from RecordingView.onDisappear so sheet dismissal, app termination, or non-stop dismissal cancels the timer Task",
+    "Store the timer Task handle in a private(set) var timerTask: Task<Void, Never>? rather than fire-and-forget — no unstructured spawn",
+    "cancelTimer() must guard for nil; setting timerTask = nil after cancel to avoid double-cancel",
+    "Log end-of-lifecycle: after teardown, the spawned Task has completed and is not retained in the heap"
+  ],
+  "acceptance_criteria": [
+    "After closing the recording sheet at any state, no Task related to the old view-model remains in the heap",
+    "50 start-stop cycle with immediate dismiss leaves no leaked Tasks (verifiable via memory-graph heuristic or a deterministic cancel-timeout test)"
+  ],
+  "out_of_scope": [
+    "Changing the timer period",
+    "Visible recording timer UI redesign"
+  ]
+}

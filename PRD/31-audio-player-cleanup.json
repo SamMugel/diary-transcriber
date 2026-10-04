@@ -1,0 +1,20 @@
+{
+  "title": "Audio Player Cleanup on Disappear",
+  "priority": 3,
+  "depends": ["audio-player", "entry-detail-view"],
+  "status": "todo",
+  "requirements": [
+    "Add .onDisappear { viewModel.audioPlayer.cleanup() } to EntryDetailView that stops the repeating Timer and releases the AVAudioPlayer reference",
+    "Ensure AudioPlayer.cleanup() is idempotent — safe to call multiple times (stop timer if running, set player = nil, reset currentPlaybackTime = 0)",
+    "If the user is mid-playback and navigates away, playback stops (no lingering AVAudioPlayer instance)",
+    "EntryDetailViewModel.onDisappear also persists the transcript via DiaryStore.update (existing behavior, preserved)"
+  ],
+  "acceptance_criteria": [
+    "After navigating away from an entry mid-playback, no AVAudioPlayer instance remains active (verifiable via Instruments / process inspection)",
+    "cleanup() can be called twice without side-effects"
+  ],
+  "out_of_scope": [
+    "Backgrounded-playback continuation",
+    "Picture-in-picture audio"
+  ]
+}

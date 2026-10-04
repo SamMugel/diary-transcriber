@@ -1,0 +1,22 @@
+{
+  "title": "File System Watcher Hookup",
+  "priority": 3,
+  "depends": ["file-system-watcher", "content-view"],
+  "status": "todo",
+  "requirements": [
+    "ListViewModel holds a private FileSystemWatcher initialized with the diary output folder URL; no longer a stand-alone never-instantiated class",
+    "Subscribe to FileSystemWatcher.events: AsyncStream<URL> in ListViewModel via a stored Task; on each debounced emission, call await refresh()",
+    "Add a teardown() / stop() method on ListViewModel that cancels the subscription Task; invoke from ContentView .onDisappear (or .task cancellation)",
+    "Wire the existing toolbar Refresh button to refresh() as before — the watcher is additive, not a replacement",
+    "Debouncing must collapse burst writes (10 files in 1s) to at most 2 refresh events (file-system-watcher contract)"
+  ],
+  "acceptance_criteria": [
+    "Dropping a new .m4a into the diary folder (with a matching manifest row side-loaded) causes the timeline to update within ~2 seconds without a manual refresh",
+    "Closing ContentView cancels the watcher subscription Task (no leaked subscription)",
+    "Burst writes do not cause more than 2 refresh events per burst window"
+  ],
+  "out_of_scope": [
+    "Cross-folder aggregation",
+    "Network volume watching"
+  ]
+}

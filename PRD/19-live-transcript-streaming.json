@@ -1,0 +1,22 @@
+{
+  "title": "Live Transcript Streaming During Recording",
+  "priority": 1,
+  "depends": ["transcription-post-recording-pipeline", "speech-transcriber"],
+  "status": "todo",
+  "requirements": [
+    "Replace the placeholder text \"Live transcript will appear here…\" with one of two visible states: (a) when live streaming is available, append partial transcript deltas into liveTranscript via appendTranscript; (b) when only full-file transcription is available, display the static message \"Recording… transcription will start when you stop\"",
+    "Make RecordingViewModel.appendTranscript(text:) callable from SpeechTranscriber streams (not test-only): if SpeechTranscriber exposes a streaming API, subscribe during recording and forward TranscriptUpdate.partial into liveTranscript",
+    "After stop(), the final transcript from service.transcribe replaces the live placeholder/deferred-text",
+    "The transcript area must be non-empty during an active recording — always shows either partial text or the deferred-transcription message"
+  ],
+  "acceptance_criteria": [
+    "During recording (>0s after start), the transcript area is non-empty with either partial text or the deferred-transcription message",
+    "The final transcript appears after stop within the pipeline completion window defined by transcription-post-recording-pipeline",
+    "The placeholder no longer persists forever after recording starts"
+  ],
+  "out_of_scope": [
+    "True streaming for Whisper (Whisper is a full-file engine)",
+    "Speaker diarization",
+    "Real-time confidence display"
+  ]
+}

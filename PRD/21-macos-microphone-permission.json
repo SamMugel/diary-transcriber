@@ -1,0 +1,22 @@
+{
+  "title": "macOS Microphone Permission Flow",
+  "priority": 1,
+  "depends": ["permission-manager", "audio-recorder"],
+  "status": "todo",
+  "requirements": [
+    "Add a 5-second timeout to AVCaptureDevice.requestAccess(for:) wrapped in withCheckedThrowingContinuation; on timeout, resume throwing a typed RecorderError.permissionTimeout — the continuation must never hang",
+    "When AVCaptureDevice.authorizationStatus(for: AVMediaType.audio) is .denied on macOS, throw RecorderError.permissionDenied and render user-facing recovery guidance to open System Settings → Privacy & Security → Microphone",
+    "When status is .notDetermined on macOS, still attempt requestAccess(for:) but treat it as best-effort; if no callback fires within the timeout, return permissionDenied with recovery guidance rather than hanging",
+    "Provide an Open System Settings affordance (visible Button) in the recording sheet that opens the System Settings → Microphone panel via NSWorkspace.shared.open — guards the URL with a safe unwrap, no force-unwrap",
+    "Surface permission errors in the recording UI (a label or banner) rather than a silent hang"
+  ],
+  "acceptance_criteria": [
+    "A first-launch attempt to record either prompts correctly, fails fast within 5 seconds, or guides the user to Settings within 5 seconds",
+    "swift test --sanitize=thread passes — no race warnings on AuthorizationManager",
+    "RecorderError.permissionTimeout and RecorderError.permissionDenied both conform to LocalizedError with distinct errorDescription values"
+  ],
+  "out_of_scope": [
+    "Multi-device permission sync",
+    "Runtime re-prompt after .denied (system requires manual user action in Settings)"
+  ]
+}

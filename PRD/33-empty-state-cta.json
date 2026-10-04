@@ -1,0 +1,21 @@
+{
+  "title": "Empty State CTA",
+  "priority": 3,
+  "depends": ["content-view"],
+  "status": "todo",
+  "requirements": [
+    "Replace the passive \"No entries yet. Click 'New Entry'…\" text in EmptyState with a centered, prominent CTA Button labeled \"New Entry\"",
+    "The CTA button calls the same startRecording() action as the toolbar New Entry primary action — single source of truth for the action",
+    "Keep the CTA centered vertically and horizontally in the empty-list area; use prominent styling (buttonStyle(.borderedProminent) or equivalent)",
+    "First-launch users see the CTA without scanning the toolbar — the toolbar button remains for subsequent entries"
+  ],
+  "acceptance_criteria": [
+    "From a fresh installation, a user can start their first recording with one click of the centered CTA",
+    "The CTA and the toolbar button trigger the identical startRecording() action",
+    "The CTA is visually prominent (not a plain text link)"
+  ],
+  "out_of_scope": [
+    "Onboarding wizard / multi-step first-launch",
+    "Sample-data seeding"
+  ]
+}

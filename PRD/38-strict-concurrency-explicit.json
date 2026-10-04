@@ -1,0 +1,18 @@
+{
+  "title": "Strict Concurrency Explicit Flag",
+  "priority": 4,
+  "depends": ["project-setup"],
+  "status": "todo",
+  "requirements": [
+    "Pin strict concurrency explicitly in Package.swift: add an inline comment next to .swiftLanguageMode(.v6) confirming it enforces strict concurrency for the toolchain, or add .unsafeFlags([\"-strict-concurrency=complete\"]) if .v6 alone is insufficient for an older toolchain",
+    "Run `swift build` and confirm zero concurrency-related warnings",
+    "Document the choice in specs/decisions.md or a top-of-file comment so intent is explicit and future-proof against toolchain drift"
+  ],
+  "acceptance_criteria": [
+    "swift build produces no concurrency warnings",
+    "The strict-concurrency intent is clearly documented in Package.swift or specs/decisions.md"
+  ],
+  "out_of_scope": [
+    "Cross-toolchain CI matrix"
+  ]
+}

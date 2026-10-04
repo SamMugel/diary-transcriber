@@ -1,0 +1,22 @@
+{
+  "title": "Transcript Settings Persistence",
+  "priority": 2,
+  "depends": ["settings-view"],
+  "status": "todo",
+  "requirements": [
+    "Persist TranscriptSettings (useOnDeviceSpeech, useWhisperFallback, and any toggles added) to UserDefaults using a dedicated prefix key (e.g. \"transcription.\" + field) — reset to defaults absent",
+    "SettingsViewModel.transcriptionSettings initializer reads from UserDefaults, not TranscriptSettings(). Defaults match the prior struct initializer defaults",
+    "Add a save() / commit handler on SettingsViewModel that writes toggles to UserDefaults on change or on Save button (write-through optional but must be deterministic across SettingsView lifecycle)",
+    "Keep API-key persistence in Keychain (not UserDefaults) and ordering consistent: API key and settings survive restart together; Keychain + UserDefaults writes must not interleave inconsistently (no partial persistence)",
+    "Read settings on app launch before constructing TranscriptionService (so useOnDeviceSpeech/useWhisperFallback reflect persisted values)"
+  ],
+  "acceptance_criteria": [
+    "Toggle useOnDeviceSpeech or useWhisperFallback, restart the app, verify the toggle holds",
+    "A fresh installation with no UserDefaults sees default TranscriptSettings values",
+    "API key (Keychain) and settings (UserDefaults) persist independently and survive restart"
+  ],
+  "out_of_scope": [
+    "Per-entry transcription profile overrides",
+    "Cloud sync of settings"
+  ]
+}

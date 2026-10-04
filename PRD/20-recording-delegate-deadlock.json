@@ -1,0 +1,22 @@
+{
+  "title": "Recording Output Delegate Deadlock Fix",
+  "priority": 1,
+  "depends": ["audio-recorder"],
+  "status": "todo",
+  "requirements": [
+    "Replace the continuation: CheckedContinuation<Void, Never>? mutable field in RecordingOutputDelegate with isolated state behind a Mutex<DelegateState> (Swift 6.0 synchronization) or a single-threaded actor mailbox; remove the @unchecked Sendable annotation — type-system-enforced safety only",
+    "Order the frame explicitly: output.stopRecording() must invoke didFinishRecordingTo / captureError on a background thread; the delegate stores the result before waitForCompletion() can await the continuation — robust to delivery order (callback fires before or after the continuation is installed)",
+    "Implement pre-resume: if didFinishRecordingTo fires before waitForCompletion enters, store the completion state up front and let the next waitForCompletion resume immediately from the stored state rather than awaiting a continuation nobody will resume",
+    "Remove the @MainActor annotation on waitForCompletion (or any cross-actor hop) — the method should run inside the AudioRecorder actor and not require a MainActor hop, since AVFoundation callbacks do not target the main thread",
+    "The captureError and continuation fields must not be mutated concurrently from different threads without synchronization"
+  ],
+  "acceptance_criteria": [
+    "50 sequential start()→stop() cycles complete in <2 seconds each with no hang",
+    "swift test --sanitize=thread is clean — no Thread Sanitizer warnings on RecordingOutputDelegate",
+    "The callback can fire before or after waitForCompletion enters without hanging"
+  ],
+  "out_of_scope": [
+    "Changing the recording format or .m4a container",
+    "Live audio waveform sampling"
+  ]
+}
