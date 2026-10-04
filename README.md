@@ -6,7 +6,11 @@ can browse and replay.
 
 ## Status
 
-**In active development.** All 17 PRDs implemented. Build and tests pass.
+**In active development.** PRDs 01–17 (MVP) are implemented and build/test
+clean. PRDs 18–40 are 23 follow-up fixes from the code review (see
+`CODE_REVIEW_ISSUES.md`) and remain `todo`. Until those land, recording works
+but transcription is never injected/invoked — see the PRD 18 entry point for
+the current work item.
 
 ## Features
 

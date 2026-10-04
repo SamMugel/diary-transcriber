@@ -5,10 +5,8 @@
   "status": "todo",
   "requirements": [
     "Build a single shared TranscriptionService at app launch with a WhisperClient(apiKey:) constructed from the Keychain API key; when no key is set, whisperClient is nil and Whisper fallback is skipped gracefully (not a crash)",
-    "Inject the shared TranscriptionService via @Environment or an AppEnvironment into RecordingViewModel, EntryDetailViewModel, and any consuming view (not a default-constructed per-VM service)",
-    "When the user edits the API key in SettingsView and commits (.onSubmit / Save button — not per keystroke), rebuild the underlying WhisperClient and replace the one inside the shared TranscriptionService (or create a new TranscriptionService instance and propagate)",
-    "Make TranscriptSettings the single source of truth for API-key presence and transcription toggles; SettingsViewModel.transcriptionSettings must not be a fresh TranscriptSettings() each run — wire it to the persisted settings (see transcript-settings-persistence)",
-    "With an API key set and Speech disabled/failed, transcription succeeds via Whisper (integration path validated end-to-end)"
+    "Inject the shared TranscriptionService into RecordingViewModel and EntryDetailViewModel via constructor parameters or an AppEnvironment (never default-construct a per-VM service)",
+    "When the user commits the API key in SettingsView (.onSubmit / Save button), rebuild the WhisperClient and replace the one inside the shared TranscriptionService (or propagate a new service instance)"
   ],
   "acceptance_criteria": [
     "A non-nil Keychain API key results in a WhisperClient-backed TranscriptionService at app startup",
@@ -17,6 +15,7 @@
   ],
   "out_of_scope": [
     "API-key rotation UI",
-    "Multiple simultaneous Whispers for different accounts"
+    "Multiple simultaneous Whispers for different accounts",
+    "Settings toggle persistence (see transcript-settings-persistence)"
   ]
 }

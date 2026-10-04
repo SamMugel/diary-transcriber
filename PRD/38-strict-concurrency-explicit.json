@@ -4,9 +4,7 @@
   "depends": ["project-setup"],
   "status": "todo",
   "requirements": [
-    "Pin strict concurrency explicitly in Package.swift: add an inline comment next to .swiftLanguageMode(.v6) confirming it enforces strict concurrency for the toolchain, or add .unsafeFlags([\"-strict-concurrency=complete\"]) if .v6 alone is insufficient for an older toolchain",
-    "Run `swift build` and confirm zero concurrency-related warnings",
-    "Document the choice in specs/decisions.md or a top-of-file comment so intent is explicit and future-proof against toolchain drift"
+    "Pin strict concurrency explicitly in Package.swift: add an inline comment next to .swiftLanguageMode(.v6) confirming it enforces strict concurrency, or add .unsafeFlags([\"-strict-concurrency=complete\"]) if .v6 alone is insufficient for an older toolchain; document the choice in specs/decisions.md"
   ],
   "acceptance_criteria": [
     "swift build produces no concurrency warnings",

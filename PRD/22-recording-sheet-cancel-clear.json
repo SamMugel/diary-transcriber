@@ -4,20 +4,18 @@
   "depends": ["recording-view"],
   "status": "todo",
   "requirements": [
-    "Add a visible Cancel/Close Button to RecordingView in all states (recording, not-recording, finalizing): labeled \"Cancel\" during recording and triggering onCancel; disabled during finalizing until pipeline completion, then re-enabled as Close",
-    "Wire the existing onCancel callback to the Cancel button action (currently never triggered by any element)",
-    "Add .onDisappear { onCancel() } fallback on RecordingView so dismissal via window close / Escape triggers onCancel when completedEntry is nil",
-    "ListViewModel.isRecording is reset to false on cancel / dismiss-without-completion — no path leaves it stuck true",
-    "If completedEntry is nil on dismiss and a partial .m4a file exists at tempURL, delete it via FileManager.removeItem (catch and log only — no orphaned audio files in ~/Documents)",
+    "Add a visible Cancel/Close Button to RecordingView in all states (recording, not-recording, finalizing): labeled 'Cancel' during recording and triggering onCancel; disabled during finalizing, re-enabled as 'Close' after pipeline completion",
+    "Add .onDisappear { onCancel() } fallback on RecordingView so external dismissal (window close, Escape) triggers onCancel when completedEntry is nil",
+    "If completedEntry is nil on dismiss and a partial .m4a file exists at tempURL, delete it via FileManager.removeItem (catch and log only — no orphaned .m4a files in ~/Documents)",
     "Retain .interactiveDismissDisabled(isRecording || isFinalizing) for swipe-to-dismiss; after a failed start the sheet is closable via the Cancel button"
   ],
   "acceptance_criteria": [
-    "Closing the recording sheet at any state returns the app to a clean cancellable state; ListViewModel.isRecording is false afterwards",
+    "Closing the recording sheet at any state returns the app to a clean state: ListViewModel.isRecording is false afterwards",
     "No orphan .m4a files remain in ~/Documents after a cancelled recording that had a partial file",
-    "A Cancel button is always visible during the recording state"
+    "A visible Cancel button is reachable during the recording state"
   ],
   "out_of_scope": [
-    "Save-vs-discard recovery on cancel (audio is deleted on cancel)",
+    "Save-vs-discard recovery on cancel (audio is deleted)",
     "Backgrounded record-and-resume"
   ]
 }

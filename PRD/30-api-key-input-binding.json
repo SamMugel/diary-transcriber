@@ -6,9 +6,7 @@
   "requirements": [
     "Add a local @State var apiKeyInput: String to SettingsView to buffer the field text; the SecureField binds to apiKeyInput, not to the Keychain-backed getter",
     "Commit apiKeyInput to Keychain only on .onSubmit, .onDisappear, or via an explicit Save button — never on every keystroke",
-    "Remove the per-keystroke SecItemDelete → SecItemAdd flow from TranscriptSettings.apiKey get/set; apiKey loads once on SettingsView .onAppear into apiKeyInput",
-    "On SettingsView .onDisappear, if apiKeyInput differs from the last-loaded value, commit to Keychain (defensive guard; no duplicate-clipboard-characters)",
-    "Do not log or display the API key in plaintext"
+    "Load apiKey once on SettingsView .onAppear into apiKeyInput; remove the per-keystroke SecItemDelete → SecItemAdd flow from TranscriptSettings.apiKey get/set"
   ],
   "acceptance_criteria": [
     "Typing smoothly into the API key field does not cause freezes, duplicated characters, or desync between display and buffer",

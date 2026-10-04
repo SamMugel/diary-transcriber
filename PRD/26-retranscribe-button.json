@@ -1,12 +1,11 @@
 {
   "title": "Retranscribe Button",
   "priority": 2,
-  "depends": ["entry-detail-view", "transcription-service"],
+  "depends": ["entry-detail-view", "transcription-service", "transcription-service-bootstrap", "transcription-post-recording-pipeline"],
   "status": "todo",
   "requirements": [
-    "Inject a shared TranscriptionService into EntryDetailViewModel via a constructor parameter — do not default-construct one locally",
-    "Wire the Re-transcribe button action (currently empty closure) to call entryDetailViewModel.retranscribe() which runs service.transcribe(at: store.url(for: entry))",
-    "Subscribe to the returned AsyncStream<TranscriptUpdate>: on .partial, update transcriptText live; on .final, call store.setTranscript with the final text and source and update the entry's source field",
+    "Wire the Re-transcribe button action (currently empty closure) to EntryDetailViewModel.retranscribe() which calls the injected (via transcription-service-bootstrap) service.transcribe(at: store.url(for: entry))",
+    "Subscribe to the returned AsyncStream<TranscriptUpdate>: on .partial, update transcriptText live; on .final, call store.setTranscript with the final text and source, then update entry.source",
     "While retranscribing, show a progress indicator and disable the Re-transcribe button (isRetranscribing = true)",
     "On .failed: show an inline failure message via a typed error state on EntryDetailViewModel and keep the button enabled for retry",
     "Re-transcribe is only visible when entry.source == .none"

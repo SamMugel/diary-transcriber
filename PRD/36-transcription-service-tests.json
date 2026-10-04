@@ -5,16 +5,14 @@
   "status": "todo",
   "requirements": [
     "Add controllable mocks for SpeechTranscriber and WhisperClient via protocol injection (or @testable internal types) — not real SFSpeechRecognizer / URLSession",
-    "Write `testSpeechTranscriber_PartialCompleted_FinalEmitted` that asserts exactly one .final TranscriptUpdate after .partial updates",
-    "Write `testWhisperFallback_WhenSpeechReturnsEmpty_WhisperRuns` that mocks Speech returning empty text and asserts the final TranscriptSource == .whisper",
-    "Write `testWhisperFallback_WhenSpeechFails_WhisperRuns` that mocks a Speech throw and asserts Whisper is invoked and the final source == .whisper",
-    "Write `testBothFailed_FailedUpdateEmitted` that mocks both engine failures and asserts a TranscriptUpdate.failed is emitted with no .final",
-    "Write `testSpeechSucceeds_NoWhisperFallback` that mocks Speech success and asserts Whisper.transcribe is never called (verify via a call-count mock)",
-    "Use XCTest assertions throughout; mark the class @MainActor",
-    "Add CI job running `swift test --sanitize=thread` per ISSUE-003/018"
+    "testSpeechSucceeds_NoWhisperFallback: mock Speech success and assert Whisper.transcribe is never called (call-count mock); final source == .speech",
+    "testWhisperFallback_WhenSpeechReturnsEmpty: mock Speech returning empty text; assert final source == .whisper",
+    "testWhisperFallback_WhenSpeechFails: mock a Speech throw; assert Whisper is invoked and final source == .whisper",
+    "testWhisperOnly_WhenSpeechDisabled: mock useOnDeviceSpeech=false; assert only Whisper runs and final source == .whisper",
+    "testBothFailed_FailedUpdateEmitted: mock both engine failures; assert TranscriptUpdate.failed is emitted with no .final"
   ],
   "acceptance_criteria": [
-    "TranscriptionServiceTests pass with all four fallback-scenario tests passing: speech-only success, whisper-only success, speech-failed-fallback-to-whisper, both-failed",
+    "All four fallback-scenario tests pass: speech-only success, whisper-only success, speech-failed-fallback-to-whisper, both-failed",
     "Tests assert exactly which engine runs and what the final TranscriptSource is",
     "No tests hit the network, mic, or on-device SFSpeechRecognizer"
   ],

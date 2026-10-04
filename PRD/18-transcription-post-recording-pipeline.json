@@ -1,25 +1,24 @@
 {
   "title": "Transcription Post-Recording Pipeline",
   "priority": 1,
-  "depends": ["audio-recorder", "whisper-client", "transcription-service", "diary-store"],
+  "depends": ["audio-recorder", "whisper-client", "transcription-service", "diary-store", "transcription-service-bootstrap", "recorder-stop-error-handling"],
   "status": "todo",
   "requirements": [
-    "Add DiaryStore.setTranscript(for id: UUID, source: TranscriptSource, text: String) async throws that writes the transcript text into the entry's .md file via temp-write + osrename (same atomic pattern as append), then updates entry.source and entry.updatedAt in manifest.json in place",
-    "Construct a single shared TranscriptionService at app startup with a WhisperClient built from the current Keychain API key (nil when unset); inject it into RecordingViewModel via a constructor parameter — never default-construct a Recorder-only service inside the view-model",
-    "After AudioRecorder.stop() returns a valid non-empty URL in RecordingViewModel.stop(), call service.transcribe(at: url) and iterate the AsyncStream<TranscriptUpdate>; set isFinalizing = true while streaming and false on .partial/.final/.failed",
-    "On .final(Transcript): call store.setTranscript with the final text and source, set completedEntry, invoke onCompleted",
-    "On .failed: set a typed error state on RecordingViewModel (e.g. transcriptionError: RecorderError/TranscriptionError); persist the entry with source .none and empty transcript OR surface the error — never build a DiaryEntry from an empty URL",
-    "Guard persistence: never call FileManager.moveItem(at: URL(filePath: \"\")) — audioPath must be non-empty before DiaryEntry construction; Document the AudioRecorder.stop() contract as throwing RecorderError.notRecording when not active"
+    "Add DiaryStore.setTranscript(for id: UUID, source: TranscriptSource, text: String) async throws that writes the transcript text into the entry's .md via temp-write + osrename (same atomic pattern as append), then updates entry.source and entry.updatedAt in manifest.json in place",
+    "In RecordingViewModel.stop(), after recorder.stop() returns a non-empty URL, call the injected service.transcribe(at:) and iterate the AsyncStream<TranscriptUpdate>; set isFinalizing = true while streaming and false on terminal update",
+    "On .final(Transcript): call store.setTranscript, set completedEntry, invoke onCompleted",
+    "On .failed: set a typed error state on RecordingViewModel and persist the entry with source .none and empty transcript — never build a DiaryEntry from an empty URL",
+    "Route EntryDetailViewModel's blur-save (saveIfChanged) through store.setTranscript instead of store.update so inline transcript edits persist to .md, closing the gap left by ISSUE-015"
   ],
   "acceptance_criteria": [
-    "Stopping a 5-second recording yields a non-empty transcript within 10 seconds for a normal installation (faster on-device if Speech succeeds; longer for Whisper fallback)",
-    "After transcription, manifest.json shows the updated source and updatedAt, and the .md file contains the transcript text",
-    "Stopping without start() produces no completedEntry and no UI side-effects (typed RecorderError.notRecording)",
-    "Transcript writes are atomic (temp + rename) so a crash mid-write leaves a consistent prior state"
+    "Stopping a 5-second recording yields a non-empty transcript within 10 seconds (faster on-device if Speech succeeds; longer for Whisper fallback)",
+    "After transcription, manifest.json shows the updated source and updatedAt, and the .md contains the transcript text",
+    "stop() without start() produces no completedEntry (guaranteed by recorder-stop-error-handling)",
+    "Transcript writes are atomic (temp + rename); a crash mid-write leaves a consistent prior state"
   ],
   "out_of_scope": [
     "Live streaming during recording (see live-transcript-streaming)",
     "Re-transcribe button from EntryDetailView (see retranscribe-button)",
-    "Whisper API-key management UI (see transcription-service-bootstrap)"
+    "App-level service construction / DI (see transcription-service-bootstrap)"
   ]
 }

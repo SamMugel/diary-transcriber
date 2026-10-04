@@ -5,9 +5,7 @@
   "status": "todo",
   "requirements": [
     "Change AudioRecorder.stop() to throw RecorderError.notRecording (LocalizedError) when no recording is active — remove the URL(fileURLWithPath: \"\") sentinel return",
-    "RecordingViewModel.stop() must call recorder.stop() with try / catch; on RecorderError.notRecording it returns early without emitting completedEntry and resets to the not-recording UI state",
-    "On success, build the DiaryEntry only from a valid, non-empty URL — audioPath != \"\" before DiaryEntry construction",
-    "Remove FileManager.moveItem(at: URL(filePath: \"\")) as a possible code path in ListViewModel.finishRecording — empty URLs never reach persistence"
+    "RecordingViewModel.stop() must call recorder.stop() in try/catch; on RecorderError.notRecording it returns early without emitting completedEntry and resets to the not-recording UI state"
   ],
   "acceptance_criteria": [
     "start() then stop() returns a valid entry with non-empty audioPath",

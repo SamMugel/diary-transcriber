@@ -4,12 +4,10 @@
   "depends": ["packaging"],
   "status": "todo",
   "requirements": [
-    "Add `cd \"$PROJECT_ROOT\"` immediately after PROJECT_ROOT is computed in scripts/package.sh, before invoking xcodebuild",
-    "Verify xcodebuild -scheme DiaryTranscriber is invoked from the project root so it finds the .xcodeproj / workspace",
-    "Fail fast with a clear error message if PROJECT_ROOT does not exist after cd (e.g. set -e or explicit test in the script)"
+    "Add `cd \"$PROJECT_ROOT\"` immediately after PROJECT_ROOT is computed and before invoking xcodebuild; fail fast (set -e or explicit test) with a clear message if the directory is unreachable"
   ],
   "acceptance_criteria": [
-    "Invoking the script from another directory (e.g. cd /tmp && /path/to/scripts/package.sh) succeeds and produces a signed .app",
+    "Invoking the script from another directory (e.g. `cd /tmp && /path/to/scripts/package.sh`) succeeds and produces a signed .app",
     "xcodebuild logs show the project root as the working directory",
     "Script exits non-zero with a clear message if the project root cannot be reached"
   ],

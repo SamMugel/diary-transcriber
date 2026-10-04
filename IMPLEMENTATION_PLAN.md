@@ -13,40 +13,37 @@ sorted by `Depends:`; within each level, sorted by `Priority` ascending.
 | 4 | 09 | audio-player | 0 | 5 | — | todo |
 | 5 | 14 | settings-view | 0 | 6 | — | todo |
 | 6 | 03 | diary-store | 1 | 2 | core-models | todo |
-| 7 | 05 | audio-recorder | 1 | 3 | permission-manager | todo |
-| 8 | 06 | speech-transcriber | 1 | 4 | core-models | todo |
-| 9 | 07 | whisper-client | 1 | 4 | core-models | todo |
-| 10 | 11 | content-view | 2 | 3 | diary-store | todo |
-| 11 | 12 | recording-view | 2 | 4 | audio-recorder, speech-transcriber | todo |
-| 12 | 08 | transcription-service | 2 | 5 | speech-transcriber, whisper-client | todo |
-| 13 | 10 | file-system-watcher | 2 | 5 | diary-store | todo |
-| 14 | 13 | entry-detail-view | 2 | 6 | audio-player, diary-store | todo |
-| 15 | 15 | timeline | 3 | 6 | diary-store, file-system-watcher | todo |
-| 16 | 17 | test-suites | 3 | 7 | diary-store, speech-transcriber, transcription-service | todo |
-| 17 | 16 | packaging | 4 | 7 | recording-view, entry-detail-view, settings-view, timeline | todo |
-
-## Build commands
-
-- **Build:** `swift build`
-- **Test:** `swift test`
-- **Lint:** `swift build` (warnings = fail)
-
-## Progress
-
-- [x] 01 project-setup
-- [x] 02 core-models
-- [x] 04 permission-manager
-- [x] 09 audio-player
-- [x] 14 settings-view
-- [x] 03 diary-store
-- [x] 05 audio-recorder
-- [x] 06 speech-transcriber
-- [x] 07 whisper-client
-- [x] 11 content-view
-- [x] 12 recording-view
-- [x] 08 transcription-service
-- [x] 10 file-system-watcher
-- [x] 13 entry-detail-view
-- [x] 15 timeline
-- [x] 17 test-suites
-- [x] 16 packaging
+| 7 | 29 | transcript-settings-persistence | 1 | 2 | settings-view | todo |
+| 8 | 30 | api-key-input-binding | 1 | 2 | settings-view | todo |
+| 9 | 05 | audio-recorder | 1 | 3 | permission-manager | todo |
+| 10 | 06 | speech-transcriber | 1 | 4 | core-models | todo |
+| 11 | 07 | whisper-client | 1 | 4 | core-models | todo |
+| 12 | 38 | strict-concurrency-explicit | 1 | 4 | project-setup | todo |
+| 13 | 20 | recording-delegate-deadlock | 2 | 1 | audio-recorder | todo |
+| 14 | 21 | macos-microphone-permission | 2 | 1 | permission-manager, audio-recorder | todo |
+| 15 | 23 | recorder-stop-error-handling | 2 | 1 | audio-recorder | todo |
+| 16 | 11 | content-view | 2 | 3 | diary-store | todo |
+| 17 | 12 | recording-view | 2 | 4 | audio-recorder, speech-transcriber | todo |
+| 18 | 08 | transcription-service | 2 | 5 | speech-transcriber, whisper-client | todo |
+| 19 | 10 | file-system-watcher | 2 | 5 | diary-store | todo |
+| 20 | 13 | entry-detail-view | 2 | 6 | audio-player, diary-store | todo |
+| 21 | 22 | recording-sheet-cancel-clear | 3 | 1 | recording-view | todo |
+| 22 | 24 | recording-timer-leak | 3 | 2 | recording-view | todo |
+| 23 | 25 | finish-recording-error-feedback | 3 | 2 | content-view | todo |
+| 24 | 27 | timeline-excerpt | 3 | 2 | diary-store, content-view | todo |
+| 25 | 28 | transcription-service-bootstrap | 3 | 2 | transcription-service, settings-view | todo |
+| 26 | 31 | audio-player-cleanup | 3 | 3 | audio-player, entry-detail-view | todo |
+| 27 | 32 | filesystem-watcher-hookup | 3 | 3 | file-system-watcher, content-view | todo |
+| 28 | 33 | empty-state-cta | 3 | 3 | content-view | todo |
+| 29 | 34 | list-viewmodel-init-task | 3 | 4 | content-view | todo |
+| 30 | 15 | timeline | 3 | 6 | diary-store, file-system-watcher | todo |
+| 31 | 17 | test-suites | 3 | 7 | diary-store, speech-transcriber, transcription-service | todo |
+| 32 | 18 | transcription-post-recording-pipeline | 4 | 1 | audio-recorder, whisper-client, transcription-service, diary-store, transcription-service-bootstrap, recorder-stop-error-handling | todo |
+| 33 | 36 | transcription-service-tests | 4 | 3 | test-suites | todo |
+| 34 | 40 | ats-handling-audit | 4 | 4 | whisper-client, finish-recording-error-feedback | todo |
+| 35 | 16 | packaging | 4 | 7 | recording-view, entry-detail-view, settings-view, timeline | todo |
+| 36 | 19 | live-transcript-streaming | 5 | 1 | transcription-post-recording-pipeline, speech-transcriber | todo |
+| 37 | 26 | retranscribe-button | 5 | 2 | entry-detail-view, transcription-service, transcription-service-bootstrap, transcription-post-recording-pipeline | todo |
+| 38 | 35 | end-to-end-record-pipeline-tests | 5 | 3 | test-suites, transcription-post-recording-pipeline | todo |
+| 39 | 37 | package-script-cwd | 5 | 4 | packaging | todo |
+| 40 | 39 | info-plist-speech-recognition-key | 5 | 4 | packaging | todo |
