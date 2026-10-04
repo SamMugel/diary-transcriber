@@ -47,6 +47,6 @@ sorted by `Depends:`; within each level, sorted by `Priority` ascending.
 - [x] 08 transcription-service
 - [x] 10 file-system-watcher
 - [x] 13 entry-detail-view
-- [ ] 15 timeline
+- [x] 15 timeline
 - [ ] 17 test-suites
 - [ ] 16 packaging
