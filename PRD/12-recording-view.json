@@ -1,0 +1,22 @@
+{
+  "title": "Recording View",
+  "priority": 4,
+  "depends": ["audio-recorder", "speech-transcriber"],
+  "status": "todo",
+  "requirements": [
+    "Implement RecordingView as modal sheet, not dismissible while recording",
+    "Implement RecordingViewModel @MainActor @Observable with liveTranscript, elapsed, isFinalizing",
+    "Start/Stop button toggle initiates recording via AudioRecorder",
+    "Live transcript updates word-by-word from SpeechTranscriber via AsyncStream",
+    "On Stop: show Finalizing until pipeline completes, then auto-dismiss"
+  ],
+  "acceptance_criteria": [
+    "Recording sheet cannot be dismissed while recording is active",
+    "Live transcript appears within 2 seconds of first speech",
+    "Sheet auto-dismisses within 1 second of pipeline completion"
+  ],
+  "out_of_scope": [
+    "Audio level meter",
+    "Whisper fallback integration"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "title": "Packaging and Release",
+  "priority": 7,
+  "depends": ["recording-view", "entry-detail-view", "settings-view", "timeline"],
+  "status": "todo",
+  "requirements": [
+    "Create app icon: 1024×1024 PNG + full .icns set (16–1024px)",
+    "Finalize Info.plist to match specs/packaging.md keys exactly",
+    "Implement adhoc code signing via codesign -s - --timestamp -f",
+    "Implement Developer ID code signing via codesign -s 'Developer ID Application: Diary Transcriber'",
+    "Build .dmg via create-dmg or productbuild",
+    "Update README as user guide with build/run instructions"
+  ],
+  "acceptance_criteria": [
+    "codesign --verify succeeds on the signed .app",
+    ".dmg installs without Gatekeeper warnings after notarization",
+    "Info.plist passes validation against specs/packaging.md key table",
+    "README contains install, run, and troubleshooting sections"
+  ],
+  "out_of_scope": [
+    "Notarization (requires Apple Developer account)",
+    "Auto-update",
+    "App Store submission"
+  ]
+}

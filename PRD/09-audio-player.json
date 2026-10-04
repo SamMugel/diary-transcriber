@@ -1,0 +1,21 @@
+{
+  "title": "Audio Player",
+  "priority": 5,
+  "depends": [],
+  "status": "todo",
+  "requirements": [
+    "Implement AudioPlayer as @Observable wrapper around AVAudioPlayer",
+    "Expose play/pause, scrubber position, and timecode as published properties",
+    "Load audio from a local file URL",
+    "Handle playback completion (reset to start)"
+  ],
+  "acceptance_criteria": [
+    "play() starts playback within 100ms",
+    "Pause/resume preserves current position",
+    "Timecode updates at least 4 times per second during playback"
+  ],
+  "out_of_scope": [
+    "Volume control",
+    "Multiple simultaneous tracks"
+  ]
+}

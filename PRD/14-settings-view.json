@@ -1,0 +1,22 @@
+{
+  "title": "Settings View",
+  "priority": 6,
+  "depends": [],
+  "status": "todo",
+  "requirements": [
+    "Implement SettingsView as Sheet from toolbar",
+    "General section: output folder via NSOpenPanel, default mic via Picker",
+    "Transcription section: on-device Speech toggle (default on), Whisper fallback toggle (default on), API key field (Keychain-stored, shown as dots)",
+    "SettingsViewModel @MainActor @Observable with apiKey, outputFolder, micID",
+    "Store API key in OS Keychain under com.compactifai.diarytranscriber.api-key"
+  ],
+  "acceptance_criteria": [
+    "API key is never stored in plaintext or manifest.json",
+    "Output folder change reflects in DiaryStore on next launch",
+    "Mic picker lists available AVCaptureDevice.audio devices"
+  ],
+  "out_of_scope": [
+    "Folder content migration",
+    "Cloud sync settings"
+  ]
+}

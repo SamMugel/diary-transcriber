@@ -1,0 +1,23 @@
+{
+  "title": "Entry Detail View",
+  "priority": 6,
+  "depends": ["audio-player", "diary-store"],
+  "status": "todo",
+  "requirements": [
+    "Implement EntryDetailView with scrollable full transcript via TextEditor",
+    "Display audio playback controls: play/pause, scrubber, timecode via AudioPlayer",
+    "Show Re-transcribe button when source = .none",
+    "Save inline transcript edits to .md and manifest on blur via DiaryStore.update()",
+    "Implement EntryDetailViewModel @MainActor @Observable with entry, audioPlayer, transcriptText"
+  ],
+  "acceptance_criteria": [
+    "Transcript is selectable and editable",
+    "Play/pause toggle works without freezing the UI",
+    "Edits persist to .md file and manifest.json on blur",
+    "Re-transcribe button appears only when source is .none"
+  ],
+  "out_of_scope": [
+    "Undo/version history",
+    "Live transcript editing"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "title": "Diary Store",
+  "priority": 2,
+  "depends": ["core-models"],
+  "status": "todo",
+  "requirements": [
+    "Implement DiaryStore actor with init(folder: URL)",
+    "Implement entries() returning [DiaryEntry] sorted newest-first by startedAt",
+    "Implement append(entry: DiaryEntry) writing audio + transcript + metadata atomically via write-to-temp + osrename",
+    "Implement update(entry: DiaryEntry) updating manifest.json in-place",
+    "Implement delete(id: UUID) removing .m4a, .md, .json files and manifest row",
+    "Implement url(for:) and data(for:) resolving relative paths to absolute URLs",
+    "Create manifest.json with schemaVersion: 1, folder, and entries array"
+  ],
+  "acceptance_criteria": [
+    "append() atomically writes files and manifest.json via temp + rename",
+    "entries() returns results sorted newest-first",
+    "delete() removes all three per-entry files and the manifest row",
+    "Concurrent append/update calls never corrupt manifest.json"
+  ],
+  "out_of_scope": [
+    "Folder relocation",
+    "Orphaned-file recovery banners"
+  ]
+}

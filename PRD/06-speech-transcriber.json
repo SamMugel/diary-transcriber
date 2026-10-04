@@ -1,0 +1,22 @@
+{
+  "title": "Speech Transcriber",
+  "priority": 4,
+  "depends": ["core-models"],
+  "status": "todo",
+  "requirements": [
+    "Implement SpeechTranscriber as actor",
+    "Use SFSpeechRecognizer + SFSpeechURLRecognitionRequest for full-file transcription",
+    "Ensure only one SFSpeechRecognizer instance exists at a time",
+    "transcribe(at audioURL: URL) async throws -> Transcript",
+    "Surface speechUnavailable when SFSpeechRecognizer is nil on device"
+  ],
+  "acceptance_criteria": [
+    "Returns Transcript with source .speech on success",
+    "Throws descriptive error when recognizer is unavailable",
+    "Never instantiates two SFSpeechRecognizer instances concurrently"
+  ],
+  "out_of_scope": [
+    "Live streaming transcription",
+    "Custom vocabulary"
+  ]
+}

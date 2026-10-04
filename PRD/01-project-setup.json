@@ -1,0 +1,21 @@
+{
+  "title": "Project Setup",
+  "priority": 1,
+  "depends": [],
+  "status": "todo",
+  "requirements": [
+    "Create Package.swift with Swift 6, macOS 14 deployment target, strict concurrency enabled",
+    "Create directory structure matching specs/architecture.md (App/, Sources/DiaryTranscriber/{Models,Storage,Recording,Transcription,Playback,Views}/, Resources/, Tests/)",
+    "Add Info.plist with CFBundleIdentifier com.compactifai.diarytranscriber, LSMinimumSystemVersion 14.0, NSMicrophoneUsageDescription",
+    "Create Xcode project wrapping the SwiftPM package"
+  ],
+  "acceptance_criteria": [
+    "swift build compiles with zero errors and zero warnings",
+    "Directory structure matches specs/architecture.md exactly",
+    "Info.plist contains all keys listed in specs/packaging.md"
+  ],
+  "out_of_scope": [
+    "App icon assets",
+    "Code signing configuration"
+  ]
+}

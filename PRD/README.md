@@ -6,28 +6,37 @@ The `ralph-prd-implementer` skill reads all files here, determines implementatio
 
 ## File format
 
-```markdown
-# <Feature name>
+Each PRD is a JSON file named `NN-<kebab-case>.json`, where `NN` is a two-digit
+priority/order number.
 
-Priority: 1
-Depends: <other-prd-slug>, <other-prd-slug>
-
-## Requirements
-
-- <numbered or bulleted list of functional requirements>
-
-## Acceptance Criteria
-
-- <a specific, testable criterion>
-
-## Out of Scope
-
-- <optional: explicit non-goals for this PRD>
+```json
+{
+  "title": "<Feature name>",
+  "priority": 1,
+  "depends": ["<other-prd-slug>", "<other-prd-slug>"],
+  "status": "todo",
+  "requirements": [
+    "<functional requirement>",
+    "<functional requirement>"
+  ],
+  "acceptance_criteria": [
+    "<a specific, testable criterion>"
+  ],
+  "out_of_scope": [
+    "<explicit non-goal>"
+  ]
+}
 ```
 
-- `Priority` is an integer; lower = higher priority. If absent, use the filename's `NN-` prefix.
-- `Depends` is a comma-separated list of other PRD slugs used to topologically sort dependencies first. Omit if the PRD has no upstream dependencies.
-- `Acceptance Criteria` must be specific and testable — not "works correctly" but "recording starts within 1 second of tapping Start."
+- `priority` is an integer; lower = higher priority. If absent, use the
+  filename's `NN-` prefix.
+- `depends` is an array of other PRD slugs (filename without leading `NN-` and
+  `.json` suffix) used to topologically sort dependencies first. Omit or use an
+  empty array if the PRD has no upstream dependencies.
+- `status` is either `"todo"` or `"done"` — the sole tracking attribute for
+  implementation progress.
+- `acceptance_criteria` must be specific and testable — not "works correctly"
+  but "recording starts within 1 second of tapping Start."
 
 ## How to use
 

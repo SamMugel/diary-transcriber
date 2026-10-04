@@ -1,0 +1,23 @@
+{
+  "title": "Transcription Service",
+  "priority": 5,
+  "depends": ["speech-transcriber", "whisper-client"],
+  "status": "todo",
+  "requirements": [
+    "Implement TranscriptionService as actor",
+    "transcribe(at audioURL: URL) returns AsyncStream<TranscriptUpdate>",
+    "Call SpeechTranscriber first; fall back to WhisperClient on: empty text, <50% expected length, Speech error, or recognition exceeding 3× audio duration",
+    "On fallback also failing, yield TranscriptUpdate.failed; retain audio on disk",
+    "No more than one engine runs at a time"
+  ],
+  "acceptance_criteria": [
+    "Streams TranscriptUpdate.partial for intermediate results",
+    "Yields TranscriptUpdate.final on success",
+    "Falls back to Whisper when Speech returns empty text",
+    "Hang protection triggers when recognition exceeds 3× audio duration"
+  ],
+  "out_of_scope": [
+    "Live streaming during recording",
+    "Speaker diarization"
+  ]
+}

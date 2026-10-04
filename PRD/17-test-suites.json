@@ -1,0 +1,20 @@
+{
+  "title": "Test Suites",
+  "priority": 7,
+  "depends": ["diary-store", "speech-transcriber", "transcription-service"],
+  "status": "todo",
+  "requirements": [
+    "Write DiaryStoreTests covering append, entries sorting, update, delete, and concurrent write safety",
+    "Write SpeechTranscriberTests covering success path, empty result, and unavailable recognizer",
+    "Write TranscriptionServiceTests covering primary success, fallback trigger conditions, and total failure path"
+  ],
+  "acceptance_criteria": [
+    "swift test passes with 100% coverage on DiaryStore public API",
+    "TranscriptionServiceTests verify all four fallback trigger conditions",
+    "All tests run in under 10 seconds"
+  ],
+  "out_of_scope": [
+    "UI snapshot tests",
+    "WhisperClient integration tests (require live API key)"
+  ]
+}

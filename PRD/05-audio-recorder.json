@@ -1,0 +1,24 @@
+{
+  "title": "Audio Recorder",
+  "priority": 3,
+  "depends": ["permission-manager"],
+  "status": "todo",
+  "requirements": [
+    "Implement AudioRecorder as actor",
+    "start() validates mic permission, configures AVCaptureSession with single audio input, adds AVCaptureAudioFileOutput set to .m4a, creates parent directory, calls session.startRunning() and output.startRecording(to: url)",
+    "stop() is idempotent (early return if not recording), calls output.stopRecording(), waits for didFinishRecordingTo callback",
+    "Return RecordingHandle exposing elapsed time and Stop callback",
+    "On recordingFailed error, stash partial file as .m4a.partial"
+  ],
+  "acceptance_criteria": [
+    "start() throws permissionDenied when mic access is denied",
+    "stop() returns a valid .m4a file URL",
+    "stop() is idempotent—calling twice does not error",
+    "Output file is AAC in .m4a container"
+  ],
+  "out_of_scope": [
+    "Input gain control",
+    "Live audio waveform",
+    "Backgrounded recording"
+  ]
+}

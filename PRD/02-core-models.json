@@ -1,0 +1,21 @@
+{
+  "title": "Core Models",
+  "priority": 1,
+  "depends": [],
+  "status": "todo",
+  "requirements": [
+    "Implement DiaryEntry struct (id: UUID, startedAt: Date, durationSeconds: Double, audioPath: String, transcriptPath: String, source: TranscriptSource, createdAt: Date, updatedAt: Date) as Hashable, Codable, Sendable",
+    "Implement Transcript struct (text: String, confidence: Double?, source: TranscriptSource, isFinal: Bool) as Hashable, Codable, Sendable",
+    "Implement TranscriptSource enum (speech, whisper, none) as String, Codable, Sendable",
+    "Implement TranscriptUpdate enum (partial(String), final(Transcript), failed(String)) as Sendable"
+  ],
+  "acceptance_criteria": [
+    "All types compile as Codable and Sendable",
+    "DiaryEntry round-trips through JSON encoding/decoding with no data loss",
+    "TranscriptSource encodes as lowercase string values"
+  ],
+  "out_of_scope": [
+    "Persistence logic",
+    "UI bindings"
+  ]
+}

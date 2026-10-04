@@ -1,0 +1,24 @@
+{
+  "title": "Whisper Client",
+  "priority": 4,
+  "depends": ["core-models"],
+  "status": "todo",
+  "requirements": [
+    "Implement WhisperClient as actor with init(apiKey: String)",
+    "POST to https://api.openai.com/v1/audio/transcriptions with model whisper-1",
+    "Use URLSession with 120s timeout, HTTPS only",
+    "transcribe(at audioURL: URL) async throws -> Transcript",
+    "Throw WhisperClientError on non-2xx response",
+    "Never log API key or audio contents"
+  ],
+  "acceptance_criteria": [
+    "Returns Transcript with source .whisper on success",
+    "Throws whisperTimeout when request exceeds 120s",
+    "Throws whisperError(status) on non-2xx HTTP response",
+    "API key is never included in logs or error messages"
+  ],
+  "out_of_scope": [
+    "Keychain storage",
+    "Retries"
+  ]
+}

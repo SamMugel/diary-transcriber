@@ -1,0 +1,22 @@
+{
+  "title": "Content View",
+  "priority": 3,
+  "depends": ["diary-store"],
+  "status": "todo",
+  "requirements": [
+    "Implement ContentView with WindowGroup 900×660 default, 720×540 minimum",
+    "Toolbar with New Entry primary button and Settings secondary button",
+    "Display EmptyState when no entries exist",
+    "Implement ListViewModel as @MainActor @Observable with entries and isRecording",
+    "New Entry button calls VM startRecording()"
+  ],
+  "acceptance_criteria": [
+    "Window opens at 900×660 and cannot be resized below 720×540",
+    "EmptyState appears when DiaryStore returns no entries",
+    "New Entry button is visible in toolbar"
+  ],
+  "out_of_scope": [
+    "Entry rows and timeline content",
+    "Recording sheet presentation"
+  ]
+}

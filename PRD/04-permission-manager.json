@@ -1,0 +1,22 @@
+{
+  "title": "Permission Manager",
+  "priority": 2,
+  "depends": [],
+  "status": "todo",
+  "requirements": [
+    "Implement PermissionManager as @MainActor helper",
+    "Check AVCaptureDevice.authorizationStatus(for: .audio)",
+    "Request access via AVCaptureDevice.requestAccess(for:) wrapped in withCheckedContinuation",
+    "Throw typed RecorderError.permissionDenied when denied or restricted",
+    "Return true when authorized"
+  ],
+  "acceptance_criteria": [
+    "Returns true when microphone is already authorized",
+    "Throws permissionDenied when denied or restricted",
+    "notDetermined status triggers system permission prompt"
+  ],
+  "out_of_scope": [
+    "UI for denied state",
+    "Deep-link to System Settings"
+  ]
+}

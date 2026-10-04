@@ -1,0 +1,20 @@
+{
+  "title": "File System Watcher",
+  "priority": 5,
+  "depends": ["diary-store"],
+  "status": "todo",
+  "requirements": [
+    "Implement FileSystemWatcher observing the Diary output folder",
+    "Post insert/update/delete notifications to DiaryStore or consuming view-model",
+    "Debounce rapid burst changes to avoid duplicate refreshes"
+  ],
+  "acceptance_criteria": [
+    "New .m4a file appears in timeline within 2 seconds of creation",
+    "External file deletion removes entry from timeline within 2 seconds",
+    "Burst writes (10 files in 1 second) result in at most 2 refresh events"
+  ],
+  "out_of_scope": [
+    "Cross-folder aggregation",
+    "Remote/network volumes"
+  ]
+}
