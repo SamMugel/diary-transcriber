@@ -32,12 +32,4 @@ final class PermissionManagerTests: XCTestCase {
         XCTAssertTrue(error.errorDescription!.contains("Internal error"))
     }
 
-    // MARK: - PermissionManager type access
-
-    func testPermissionManager_isMainActorType() {
-        // PermissionManager is @MainActor; we can verify it compiles as an enum by
-        // checking its type metadata is available. Testing the actual permission flow
-        // requires AVFoundation hardware and can't be done in unit tests.
-        XCTAssertTrue(true, "PermissionManager compiled and is accessible")
-    }
 }

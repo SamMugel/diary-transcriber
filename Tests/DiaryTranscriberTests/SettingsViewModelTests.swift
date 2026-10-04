@@ -3,20 +3,26 @@ import XCTest
 
 final class SettingsViewModelTests: XCTestCase {
 
+    private static let outputFolderKey = "com.compactifai.diarytranscriber.outputFolder"
+
     @MainActor
     func testDefaultOutputFolder_isDocumentsDiary() {
+        // Clear any previous value to test the true default.
+        UserDefaults.standard.removeObject(forKey: Self.outputFolderKey)
         let vm = SettingsViewModel()
-        // Default should contain "Documents/Diary" when no override set
         XCTAssertTrue(vm.outputFolder.contains("Diary"), "Default output folder should be Diary-related")
     }
 
     @MainActor
-    func testAPIKey_returnsEmptyWhenNotSet() {
-        let vm = SettingsViewModel()
-        // When no key is set, returns empty string (not nil)
-        // Note: may return a previously saved key from Keychain in test environment
-        _ = vm.apiKey
-        XCTAssertTrue(true, "API key accessor compiles and runs")
+    func testOutputFolder_persistsAcrossInstances() {
+        let vm1 = SettingsViewModel()
+        vm1.outputFolder = "/custom/test/path"
+
+        let vm2 = SettingsViewModel()
+        XCTAssertEqual(vm2.outputFolder, "/custom/test/path", "Output folder should persist via UserDefaults")
+
+        // Clean up to avoid polluting other tests.
+        UserDefaults.standard.removeObject(forKey: Self.outputFolderKey)
     }
 
     @MainActor

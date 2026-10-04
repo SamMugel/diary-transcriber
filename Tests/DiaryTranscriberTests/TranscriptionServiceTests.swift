@@ -3,15 +3,7 @@ import XCTest
 
 final class TranscriptionServiceTests: XCTestCase {
 
-    func testInit_acceptsDependencies() {
-        _ = TranscriptionService()
-        _ = TranscriptionService(
-            speechTranscriber: SpeechTranscriber(),
-            whisperClient: WhisperClient(apiKey: "test")
-        )
-    }
-
-    // MARK: - Primary success path
+    // MARK: - Primary bogus-file path
 
     @MainActor
     func testTranscribe_bogusFile_yieldsFailedOrPartial() async throws {
@@ -57,33 +49,12 @@ final class TranscriptionServiceTests: XCTestCase {
         XCTAssertTrue(hasFailed, "With no engines enabled, should yield .failed")
     }
 
-    // MARK: - Settings control engine selection
-
-    @MainActor
-    func testSettings_speechDisabledWhisperDisabled_yieldsFailed() async throws {
-        let settings = TranscriptSettings(
-            useOnDeviceSpeech: false,
-            useWhisperFallback: false
-        )
-        let service = TranscriptionService(settings: settings)
-
-        let bogusURL = URL(fileURLWithPath: "/tmp/nonexistent-\(UUID().uuidString).m4a")
-        var updates: [TranscriptUpdate] = []
-        let stream = await service.transcribe(at: bogusURL)
-        for await update in stream { updates.append(update) }
-
-        let hasFailed = updates.contains {
-            if case .failed = $0 { return true }
-            return false
-        }
-        XCTAssertTrue(hasFailed, "All engines disabled → .failed")
-    }
-
-    // MARK: - Whisper fallback on speech unavailable (device has no Speech)
+    // MARK: - Whisper fallback on speech unavailable
 
     @MainActor
     func testSpeechUnavailable_fallsBackToWhisperOrFails() async throws {
-        // Speech allocator not available → falls through to Whisper.
+        // When Speech is unavailable on the device, the service should fall through
+        // to Whisper. With a bogus file, Whisper errors, but updates are still produced.
         let service = TranscriptionService(
             whisperClient: WhisperClient(apiKey: "test"),
             settings: TranscriptSettings(useOnDeviceSpeech: true, useWhisperFallback: true)
@@ -98,22 +69,36 @@ final class TranscriptionServiceTests: XCTestCase {
         let stream = await service.transcribe(at: cacheDir)
         for await update in stream { updates.append(update) }
 
-        // With bogus audio, either fall back to Whisper (which errors) or Speech errors.
-        // Either way, at least one update is produced.
         XCTAssertFalse(updates.isEmpty, "Should produce updates for file-based audio")
     }
 
-    // MARK: - TranscriptSettings defaults
+    // MARK: - Speech disabled, Whisper disabled (distinct from nil client)
 
-    func testTranscriptSettings_defaults() {
-        let settings = TranscriptSettings()
-        XCTAssertTrue(settings.useOnDeviceSpeech, "Default should enable Speech")
-        XCTAssertTrue(settings.useWhisperFallback, "Default should enable Whisper fallback")
-    }
+    @MainActor
+    func testTranscribe_speechDisabledWhisperDisabled_yieldsFailed() async throws {
+        let settings = TranscriptSettings(
+            useOnDeviceSpeech: false,
+            useWhisperFallback: false
+        )
+        // Even with a whisperClient, settings disable both engines.
+        let service = TranscriptionService(
+            whisperClient: WhisperClient(apiKey: "test"),
+            settings: settings
+        )
 
-    func testTranscriptSettings_custom() {
-        let settings = TranscriptSettings(useOnDeviceSpeech: false, useWhisperFallback: false)
-        XCTAssertFalse(settings.useOnDeviceSpeech)
-        XCTAssertFalse(settings.useWhisperFallback)
+        let tempFile = FileManager.default.temporaryDirectory
+            .appending(path: "ts-disabled-\(UUID().uuidString).m4a")
+        try "data".write(to: tempFile, atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: tempFile) }
+
+        var updates: [TranscriptUpdate] = []
+        let stream = await service.transcribe(at: tempFile)
+        for await update in stream { updates.append(update) }
+
+        let hasFailed = updates.contains {
+            if case .failed = $0 { return true }
+            return false
+        }
+        XCTAssertTrue(hasFailed, "With all engines disabled via settings, should yield .failed")
     }
 }

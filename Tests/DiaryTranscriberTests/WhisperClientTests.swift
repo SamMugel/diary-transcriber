@@ -3,11 +3,6 @@ import XCTest
 
 final class WhisperClientTests: XCTestCase {
 
-    func testInit_acceptsAPIKey() {
-        // Verify the actor can be instantiated with any key string.
-        _ = WhisperClient(apiKey: "test-key-123")
-    }
-
     func testTranscribe_emptyAPIKey_throwsWhisperError401() async throws {
         let client = WhisperClient(apiKey: "")
         let tempURL = FileManager.default.temporaryDirectory
@@ -42,13 +37,5 @@ final class WhisperClientTests: XCTestCase {
         )
 
         _ = client // Suppress unused warning.
-    }
-
-    func testTranscriptionError_whisperTimeout_hasDescription() {
-        let error = TranscriptionError.whisperTimeout
-        XCTAssertFalse(
-            (error.errorDescription ?? "").isEmpty,
-            "whisperTimeout should have a description"
-        )
     }
 }

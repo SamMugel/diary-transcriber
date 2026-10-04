@@ -14,28 +14,45 @@ final class AudioPlayerTests: XCTestCase {
     }
 
     @MainActor
-    func testTogglePlayPause_togglesIsPlayingFlag() {
+    func testTogglePlayPause_noPlayerLoaded_doesNothing() {
         let player = AudioPlayer()
-        // No player loaded; toggle should not start playback
+        // Without a loaded AVAudioPlayer, toggle should be a no-op.
         player.togglePlayPause()
         XCTAssertFalse(player.isPlaying, "Should not start without a loaded player")
+        player.togglePlayPause()
+        XCTAssertFalse(player.isPlaying, "Still no player; should remain stopped")
     }
 
     @MainActor
-    func testStop_resetsState() {
+    func testStop_resetsCurrentTimeToZero() {
         let player = AudioPlayer()
+        // Set non-default state, then verify stop resets it.
+        player.currentTime = 30
+        player.duration = 60
+        player.isPlaying = true
         player.stop()
         XCTAssertFalse(player.isPlaying)
-        XCTAssertEqual(player.currentTime, 0)
+        XCTAssertEqual(player.currentTime, 0, "stop() should reset currentTime to 0")
     }
 
     @MainActor
-    func testTimecode_formatsCorrectly() {
+    func testTimecode_formatsMinutesAndSeconds() {
         let player = AudioPlayer()
-        // Verify pure timecode formatting logic via progress and timecode accessors
-        // Cannot load a real audio file without binary data, but we can verify
-        // that the default timecode is "00:00"
+
+        player.currentTime = 0
         XCTAssertEqual(player.timecode, "00:00")
+
+        player.currentTime = 5
+        XCTAssertEqual(player.timecode, "00:05")
+
+        player.currentTime = 65
+        XCTAssertEqual(player.timecode, "01:05")
+
+        player.currentTime = 125.7
+        XCTAssertEqual(player.timecode, "02:05", "Fractional seconds should truncate")
+
+        player.currentTime = 3599
+        XCTAssertEqual(player.timecode, "59:59")
     }
 
     @MainActor
@@ -43,6 +60,14 @@ final class AudioPlayerTests: XCTestCase {
         let player = AudioPlayer()
         player.currentTime = 10
         XCTAssertEqual(player.progress, 0, "Progress should be 0 when duration is 0")
+    }
+
+    @MainActor
+    func testProgress_calculatesRatio() {
+        let player = AudioPlayer()
+        player.duration = 100
+        player.currentTime = 50
+        XCTAssertEqual(player.progress, 0.5, accuracy: 0.001, "Progress at 50/100 should be 0.5")
     }
 
     @MainActor

@@ -3,13 +3,14 @@ import XCTest
 
 final class AudioRecorderTests: XCTestCase {
 
-    func testRecordingHandle_elapsedCalculatesFromStartedAt() {
-        let start = Date(timeIntervalSince1970: 1000)
+    func testRecordingHandle_elapsedApproximatesTimeSinceStart() {
+        let start = Date().addingTimeInterval(-5)
         let handle = RecordingHandle(startedAt: start, outputURL: URL(fileURLWithPath: "/tmp/test.m4a"))
 
-        // Elapsed should be non-negative (time since start).
+        // elapsed() uses Date() internally, so verify it's in the right ballpark.
         let elapsed = handle.elapsed()
-        XCTAssertGreaterThanOrEqual(elapsed, 0, "Elapsed time should be non-negative")
+        XCTAssertGreaterThan(elapsed, 4.0, "Elapsed should be at least ~5 seconds after a 5s-old start")
+        XCTAssertLessThan(elapsed, 10.0, "Elapsed should be well under 10 seconds")
     }
 
     func testRecordingHandle_preservesOutputURL() {

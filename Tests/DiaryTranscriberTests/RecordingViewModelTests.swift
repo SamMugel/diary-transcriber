@@ -26,4 +26,14 @@ final class RecordingViewModelTests: XCTestCase {
         vm.appendTranscript(text: "First")
         XCTAssertEqual(vm.liveTranscript, "First", "First word should have no leading space")
     }
+
+    @MainActor
+    func testStopWithoutStarting_isNoOp() async {
+        let vm = RecordingViewModel()
+        // Calling stop() without starting should be a no-op (guard returns early).
+        await vm.stop()
+        XCTAssertFalse(vm.isRecording, "Should not be recording without starting")
+        XCTAssertFalse(vm.isFinalizing, "isFinalizing should remain false")
+        XCTAssertNil(vm.handle, "handle should remain nil")
+    }
 }

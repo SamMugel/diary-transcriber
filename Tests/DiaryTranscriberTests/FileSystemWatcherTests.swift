@@ -80,8 +80,17 @@ final class FileSystemWatcherTests: XCTestCase {
         await watcher.stop()
     }
 
-    func testInit_doesNotCrash() {
+    @MainActor
+    func testStop_isIdempotent() async throws {
         let tempDir = FileManager.default.temporaryDirectory
-        _ = FileSystemWatcher(folder: tempDir)
+            .appending(path: "watch-stop-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+
+        let watcher = FileSystemWatcher(folder: tempDir)
+        _ = await watcher.watch()
+        await watcher.stop()
+        // Calling stop() again should not crash.
+        await watcher.stop()
     }
 }
