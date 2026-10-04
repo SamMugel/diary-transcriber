@@ -18,6 +18,11 @@ public final class SettingsViewModel {
     private static let useOnDeviceSpeechKey = "com.compactifai.diarytranscriber.useOnDeviceSpeech"
     private static let useWhisperFallbackKey = "com.compactifai.diarytranscriber.useWhisperFallback"
 
+    // AI: production Keychain coordinates for the OpenAI API key; mirror KeychainHelper's private service/account
+    //     so default args are explicit and tests inject their own service instead / PRD 30
+    private static let keychainService = "com.compactifai.diarytranscriber"
+    private static let keychainAccount = "api-key"
+
     var outputFolder: String {
         get {
             UserDefaults.standard.string(forKey: Self.outputFolderKey)
@@ -36,10 +41,34 @@ public final class SettingsViewModel {
 
     var transcriptionSettings: TranscriptSettings
 
+    // AI: read-only apiKey getter — never written from the view loop; SettingsView buffers keystrokes
+    //     in a @State and calls commitAPIKey(_:) only on .onSubmit / .onDisappear / Save,
+    //     eliminating per-keystroke SecItemDelete → SecItemAdd churn that froze typing / PRD 30
     var apiKey: String {
-        get { transcriptionSettings.apiKey ?? "" }
-        // AI: apiKey writes to Keychain only, independent of toggle persistence; never mix stores / PRD 29
-        set { transcriptionSettings.apiKey = newValue.isEmpty ? nil : newValue }
+        KeychainHelper.loadAPIKey() ?? ""
+    }
+
+    // AI: test-friendly load that mirrors commitAPIKey's optional service/account overloads so the
+    //     test suite can read back under its own service without touching the production api-key entry / PRD 30
+    func apiKey(service: String, account: String) -> String {
+        KeychainHelper.loadAPIKey(service: service, account: account) ?? ""
+    }
+
+    // AI: single explicit commit point for the SecureField buffer; writes to Keychain exactly once
+    //     per user action, not per character; empty string removes the key from Keychain.
+    //     Production overload resolves to the com.compactifai.diarytranscriber service; the
+    //     test suite uses the parameterized overload with a test-specific service so CI never
+    //     collides with the user's real api-key entry / PRD 30
+    func commitAPIKey(_ value: String) {
+        commitAPIKey(value, service: Self.keychainService, account: Self.keychainAccount)
+    }
+
+    func commitAPIKey(_ value: String, service: String, account: String) {
+        if value.isEmpty {
+            KeychainHelper.deleteAPIKey(service: service, account: account)
+        } else {
+            try? KeychainHelper.saveAPIKey(value, service: service, account: account)
+        }
     }
 
     var availableMics: [(id: String, name: String)] {

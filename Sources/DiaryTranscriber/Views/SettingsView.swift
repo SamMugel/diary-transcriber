@@ -8,6 +8,9 @@ import SwiftUI
 
 public struct SettingsView: View {
     @State private var viewModel: SettingsViewModel
+    // AI: local buffer for the API-key field; SecureField binds here, not to Keychain, so each keystroke
+    //     only mutates this @State and never touches SecItem; commitAPIKey persists it on demand / PRD 30
+    @State private var apiKeyInput: String = ""
 
     public init(viewModel: SettingsViewModel = SettingsViewModel()) {
         self._viewModel = State(initialValue: viewModel)
@@ -49,10 +52,18 @@ public struct SettingsView: View {
                     set: { viewModel.transcriptionSettings.useWhisperFallback = $0 }
                 ))
 
-                SecureField("OpenAI API Key", text: Binding(
-                    get: { viewModel.apiKey },
-                    set: { viewModel.apiKey = $0 }
-                ))
+                // AI: bind SecureField to local @State apiKeyInput so typing never hits Keychain; commit
+                //     happens on .onSubmit, .onDisappear, or explicit Save only / PRD 30
+                SecureField("OpenAI API Key", text: $apiKeyInput)
+                    .onSubmit {
+                        // AI: commit on Return so a user who submits the field persists immediately / PRD 30
+                        viewModel.commitAPIKey(apiKeyInput)
+                    }
+
+                // AI: explicit Save button so a user can persist the buffered key without leaving / PRD 30
+                Button("Save API Key") {
+                    viewModel.commitAPIKey(apiKeyInput)
+                }
             }
 
             Section("About") {
@@ -62,8 +73,15 @@ public struct SettingsView: View {
         }
         .padding()
         .frame(minWidth: 420)
+        .onAppear {
+            // AI: load the current Keychain value into the buffer exactly once on view appearance;
+            //     never re-read per keystroke, so display and buffer never desync / PRD 30
+            apiKeyInput = viewModel.apiKey
+        }
         .onDisappear {
-            // AI: commit toggles to UserDefaults when the sheet closes, not per-keystroke; API key already persisted via Keychain / PRD 29
+            // AI: persist toggles to UserDefaults and commit any buffered-but-unsubmitted API key
+            //     when the sheet closes — single write path, no per-keystroke Keychain churn / PRD 29, PRD 30
+            viewModel.commitAPIKey(apiKeyInput)
             viewModel.save()
         }
     }

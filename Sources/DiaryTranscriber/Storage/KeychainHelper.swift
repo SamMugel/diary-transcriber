@@ -15,12 +15,19 @@ enum KeychainHelper {
     private static let apiKeyAccount = "api-key"
 
     static func saveAPIKey(_ key: String) throws {
+        try saveAPIKey(key, service: service, account: apiKeyAccount)
+    }
+
+    // AI: parameterized helper so tests can write/delete a key under a test-specific service/account
+    //     without colliding with the real com.compactifai.diarytranscriber key; production callers
+    //     use the no-arg overload and never need to know the private service/account / PRD 30
+    static func saveAPIKey(_ key: String, service: String, account: String) throws {
         #if canImport(Security)
         let data = key.data(using: .utf8) ?? Data()
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
-            kSecAttrAccount as String: apiKeyAccount,
+            kSecAttrAccount as String: account,
         ]
 
         SecItemDelete(query as CFDictionary)
@@ -28,7 +35,7 @@ enum KeychainHelper {
         let attributes: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
-            kSecAttrAccount as String: apiKeyAccount,
+            kSecAttrAccount as String: account,
             kSecValueData as String: data,
             kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
         ]
@@ -43,11 +50,15 @@ enum KeychainHelper {
     }
 
     static func loadAPIKey() -> String? {
+        loadAPIKey(service: service, account: apiKeyAccount)
+    }
+
+    static func loadAPIKey(service: String, account: String) -> String? {
         #if canImport(Security)
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
-            kSecAttrAccount as String: apiKeyAccount,
+            kSecAttrAccount as String: account,
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne,
         ]
@@ -66,11 +77,15 @@ enum KeychainHelper {
     }
 
     static func deleteAPIKey() {
+        deleteAPIKey(service: service, account: apiKeyAccount)
+    }
+
+    static func deleteAPIKey(service: String, account: String) {
         #if canImport(Security)
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
-            kSecAttrAccount as String: apiKeyAccount,
+            kSecAttrAccount as String: account,
         ]
         SecItemDelete(query as CFDictionary)
         #endif

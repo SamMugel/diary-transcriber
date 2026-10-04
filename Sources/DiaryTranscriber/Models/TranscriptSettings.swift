@@ -19,13 +19,9 @@ public struct TranscriptSettings: Codable, Equatable {
     }
 
     public var apiKey: String? {
+        // AI: read-only getter — setter removed so SecureField typing never triggers per-keystroke
+        //     SecItemDelete → SecItemAdd churn; SettingsViewModel.commitAPIKey is the only write path,
+        //     invoked on .onSubmit / .onDisappear only, never on each character / PRD 30
         get { KeychainHelper.loadAPIKey() }
-        set {
-            if let newValue, !newValue.isEmpty {
-                try? KeychainHelper.saveAPIKey(newValue)
-            } else {
-                KeychainHelper.deleteAPIKey()
-            }
-        }
     }
 }
