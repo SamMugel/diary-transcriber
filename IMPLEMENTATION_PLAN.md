@@ -36,7 +36,7 @@ sorted by `Depends:`; within each level, sorted by `Priority` ascending.
 - [x] 01 project-setup
 - [x] 02 core-models
 - [x] 04 permission-manager
-- [ ] 09 audio-player
+- [x] 09 audio-player
 - [ ] 14 settings-view
 - [ ] 03 diary-store
 - [ ] 05 audio-recorder
