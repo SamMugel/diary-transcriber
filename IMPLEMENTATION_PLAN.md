@@ -40,7 +40,7 @@ sorted by `Depends:`; within each level, sorted by `Priority` ascending.
 - [x] 14 settings-view
 - [x] 03 diary-store
 - [x] 05 audio-recorder
-- [ ] 06 speech-transcriber
+- [x] 06 speech-transcriber
 - [ ] 07 whisper-client
 - [ ] 11 content-view
 - [ ] 12 recording-view
