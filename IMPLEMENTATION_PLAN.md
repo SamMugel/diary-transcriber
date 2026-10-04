@@ -33,7 +33,7 @@ sorted by `Depends:`; within each level, sorted by `Priority` ascending.
 
 ## Progress
 
-- [ ] 01 project-setup
+- [x] 01 project-setup
 - [ ] 02 core-models
 - [ ] 04 permission-manager
 - [ ] 09 audio-player

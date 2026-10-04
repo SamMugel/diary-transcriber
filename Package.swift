@@ -24,6 +24,14 @@ let package = Package(
             swiftSettings: [
                 .swiftLanguageMode(.v6)
             ]
+        ),
+        .testTarget(
+            name: "DiaryTranscriberTests",
+            dependencies: ["DiaryTranscriberCore"],
+            path: "Tests/DiaryTranscriberTests",
+            swiftSettings: [
+                .swiftLanguageMode(.v6)
+            ]
         )
     ]
 )
