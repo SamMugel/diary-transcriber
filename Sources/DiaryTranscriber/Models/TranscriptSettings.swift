@@ -6,11 +6,19 @@ import Foundation
 //         and API key; these control TranscriptionService fallback behavior
 //   ref:  specs/transcription.md, specs/ui.md SettingsView
 
-struct TranscriptSettings: Codable {
-    var useOnDeviceSpeech: Bool = true
-    var useWhisperFallback: Bool = true
+public struct TranscriptSettings: Codable {
+    public var useOnDeviceSpeech: Bool = true
+    public var useWhisperFallback: Bool = true
 
-    var apiKey: String? {
+    public init(
+        useOnDeviceSpeech: Bool = true,
+        useWhisperFallback: Bool = true
+    ) {
+        self.useOnDeviceSpeech = useOnDeviceSpeech
+        self.useWhisperFallback = useWhisperFallback
+    }
+
+    public var apiKey: String? {
         get { KeychainHelper.loadAPIKey() }
         set {
             if let newValue, !newValue.isEmpty {
