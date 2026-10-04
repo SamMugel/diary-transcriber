@@ -42,7 +42,7 @@ sorted by `Depends:`; within each level, sorted by `Priority` ascending.
 - [x] 05 audio-recorder
 - [x] 06 speech-transcriber
 - [x] 07 whisper-client
-- [ ] 11 content-view
+- [x] 11 content-view
 - [ ] 12 recording-view
 - [ ] 08 transcription-service
     [ ] 10 file-system-watcher
