@@ -17,4 +17,3 @@ Write unit tests for all public types and non-trivial logic.
 - **Use `setUp()` / `tearDown()` for fixture creation and cleanup.** Temp files go under `NSTemporaryDirectory()`.
 - **Assert with specific matchers** (`XCTAssertEqual`, `XCTAssertThrowsError`, `XCTAssertNil`) over `XCTAssertTrue(bool)`.
 - **Test behavior through the public API only.** If a private method needs testing, extract it into an internal type.
-- **Run `swift test` before committing.**

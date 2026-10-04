@@ -26,7 +26,7 @@ Depends: <other-prd-slug>, <other-prd-slug>
 ```
 
 - `Priority` is an integer; lower = higher priority. If absent, use the filename's `NN-` prefix.
-- `Depends` is optional; omit if the PRD has no upstream dependencies.
+- `Depends` is a comma-separated list of other PRD slugs used to topologically sort dependencies first. Omit if the PRD has no upstream dependencies.
 - `Acceptance Criteria` must be specific and testable — not "works correctly" but "recording starts within 1 second of tapping Start."
 
 ## How to use
