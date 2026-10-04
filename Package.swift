@@ -15,14 +15,14 @@ let package = Package(
             dependencies: ["DiaryTranscriberCore"],
             path: "App",
             swiftSettings: [
-                .swiftLanguageMode(.v6)
+                .swiftLanguageMode(.v6) // AI: Swift 6 mode enables strict concurrency (-strict-concurrency=complete); no .unsafeFlags needed / PRD 38
             ]
         ),
         .target(
             name: "DiaryTranscriberCore",
             path: "Sources/DiaryTranscriber",
             swiftSettings: [
-                .swiftLanguageMode(.v6)
+                .swiftLanguageMode(.v6) // AI: Swift 6 mode enables strict concurrency (-strict-concurrency=complete); no .unsafeFlags needed / PRD 38
             ]
         ),
         .testTarget(
@@ -30,7 +30,7 @@ let package = Package(
             dependencies: ["DiaryTranscriberCore"],
             path: "Tests/DiaryTranscriberTests",
             swiftSettings: [
-                .swiftLanguageMode(.v6)
+                .swiftLanguageMode(.v6) // AI: Swift 6 mode enables strict concurrency (-strict-concurrency=complete); no .unsafeFlags needed / PRD 38
             ]
         )
     ]

@@ -13,6 +13,7 @@ public final class ListViewModel {
 
     public var entries: [DiaryEntry] = []
     public var isRecording = false
+    public var showRecordingSheet = false
 
     private let store: DiaryStore?
 
@@ -31,11 +32,61 @@ public final class ListViewModel {
     }
 
     public func startRecording() {
+        showRecordingSheet = true
         isRecording = true
     }
 
     public func cancelRecording() {
         isRecording = false
+        showRecordingSheet = false
+    }
+
+    /// Called when RecordingView finishes (recording stopped + entry committed).
+    /// Moves the audio file into the store folder, persists the entry, and refreshes.
+    public func finishRecording(entry: DiaryEntry) async {
+        showRecordingSheet = false
+        isRecording = false
+
+        guard let store else { return }
+        do {
+            // The audio file is at an absolute path (written by AudioRecorder to ~/Documents).
+            // Move it into the store's folder and use a relative path in the entry.
+            let sourceURL = URL(filePath: entry.audioPath)
+            let filename = sourceURL.lastPathComponent
+            let relativeAudioPath = filename
+            let relativeTranscriptPath = sourceURL.deletingPathExtension()
+                .appendingPathExtension("md").lastPathComponent
+
+            // Build the entry with relative paths.
+            let resolvedEntry = DiaryEntry(
+                id: entry.id,
+                startedAt: entry.startedAt,
+                durationSeconds: entry.durationSeconds,
+                audioPath: relativeAudioPath,
+                transcriptPath: relativeTranscriptPath,
+                source: entry.source,
+                createdAt: entry.createdAt,
+                updatedAt: entry.updatedAt
+            )
+
+            // Move the audio file into the store folder.
+            // The store folder is created by append(), so we create it here first
+            // to ensure moveItem succeeds.
+            let storeFolder = await store.folderURL()
+            try? FileManager.default.createDirectory(
+                at: storeFolder,
+                withIntermediateDirectories: true
+            )
+            let destURL = storeFolder.appending(path: filename)
+            try? FileManager.default.removeItem(at: destURL)
+            try FileManager.default.moveItem(at: sourceURL, to: destURL)
+
+            try await store.append(entry: resolvedEntry)
+            await refresh()
+        } catch {
+            // Persist failed — refresh anyway so the user sees current state.
+            await refresh()
+        }
     }
 }
 
@@ -94,6 +145,18 @@ public struct ContentView: View {
                 .toolbar { toolbarContent }
         }
         .frame(minWidth: 720, minHeight: 540)
+        .sheet(isPresented: $viewModel.showRecordingSheet) {
+            RecordingView(
+                onCompleted: { entry in
+                    Task {
+                        await viewModel.finishRecording(entry: entry)
+                    }
+                },
+                onCancel: {
+                    viewModel.cancelRecording()
+                }
+            )
+        }
         .sheet(isPresented: $showSettings) {
             SettingsView()
                 .frame(minWidth: 460)
@@ -123,20 +186,13 @@ public struct ContentView: View {
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .primaryAction) {
             Button {
-                if viewModel.isRecording {
-                    viewModel.cancelRecording()
-                } else {
-                    viewModel.startRecording()
-                }
+                viewModel.startRecording()
             } label: {
-                if viewModel.isRecording {
-                    Label("Cancel", systemImage: "stop.circle.fill")
-                } else {
-                    Label("New Entry", systemImage: "mic.fill")
-                        .fontWeight(.semibold)
-                }
+                Label("New Entry", systemImage: "mic.fill")
+                    .fontWeight(.semibold)
             }
-            .help(viewModel.isRecording ? "Cancel recording" : "Start a new diary entry")
+            .help("Start a new diary entry")
+            .disabled(viewModel.isRecording)
         }
 
         ToolbarItem(placement: .secondaryAction) {

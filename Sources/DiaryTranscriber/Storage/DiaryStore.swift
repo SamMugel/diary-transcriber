@@ -76,6 +76,11 @@ public actor DiaryStore {
         folder.appending(path: entry.audioPath).standardizedFileURL
     }
 
+    /// Returns the absolute URL of the store's output folder.
+    public func folderURL() -> URL {
+        folder
+    }
+
     public func data(for entry: DiaryEntry) async throws -> EntryData {
         let audioURL = url(for: entry)
         let transcriptURL = folder.appending(path: entry.transcriptPath)

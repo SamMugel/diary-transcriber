@@ -7,18 +7,18 @@ sorted by `Depends:`; within each level, sorted by `Priority` ascending.
 
 | # | PRD | Slug | Level | Priority | Depends On | Status |
 |---|-----|------|-------|----------|------------|--------|
-| 1 | 01 | project-setup | 0 | 1 | — | todo |
-| 2 | 02 | core-models | 0 | 1 | — | todo |
-| 3 | 04 | permission-manager | 0 | 2 | — | todo |
-| 4 | 09 | audio-player | 0 | 5 | — | todo |
-| 5 | 14 | settings-view | 0 | 6 | — | todo |
-| 6 | 03 | diary-store | 1 | 2 | core-models | todo |
+| 1 | 01 | project-setup | 0 | 1 | — | done |
+| 2 | 02 | core-models | 0 | 1 | — | done |
+| 3 | 04 | permission-manager | 0 | 2 | — | done |
+| 4 | 09 | audio-player | 0 | 5 | — | done |
+| 5 | 14 | settings-view | 0 | 6 | — | done |
+| 6 | 03 | diary-store | 1 | 2 | core-models | done |
 | 7 | 29 | transcript-settings-persistence | 1 | 2 | settings-view | todo |
 | 8 | 30 | api-key-input-binding | 1 | 2 | settings-view | todo |
-| 9 | 05 | audio-recorder | 1 | 3 | permission-manager | todo |
-| 10 | 06 | speech-transcriber | 1 | 4 | core-models | todo |
-| 11 | 07 | whisper-client | 1 | 4 | core-models | todo |
-| 12 | 38 | strict-concurrency-explicit | 1 | 4 | project-setup | todo |
+| 9 | 05 | audio-recorder | 1 | 3 | permission-manager | done |
+| 10 | 06 | speech-transcriber | 1 | 4 | core-models | done |
+| 11 | 07 | whisper-client | 1 | 4 | core-models | done |
+| 12 | 38 | strict-concurrency-explicit | 1 | 4 | project-setup | done |
 | 13 | 20 | recording-delegate-deadlock | 2 | 1 | audio-recorder | todo |
 | 14 | 21 | macos-microphone-permission | 2 | 1 | permission-manager, audio-recorder | todo |
 | 15 | 23 | recorder-stop-error-handling | 2 | 1 | audio-recorder | todo |

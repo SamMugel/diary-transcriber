@@ -11,14 +11,20 @@ public struct RecordingView: View {
     @State private var viewModel: RecordingViewModel
     @Environment(\.dismiss) private var dismiss
 
-    private var onCompleted: (() -> Void)?
+    /// Called when recording completes with the finished DiaryEntry.
+    /// The entry holds absolute paths to the audio file (and its companion .md path).
+    /// The caller (e.g., ListViewModel) copies these into the store folder and persists.
+    private var onCompleted: ((DiaryEntry) -> Void)?
+    private var onCancel: (() -> Void)?
 
     public init(
         viewModel: RecordingViewModel = RecordingViewModel(),
-        onCompleted: (() -> Void)? = nil
+        onCompleted: ((DiaryEntry) -> Void)? = nil,
+        onCancel: (() -> Void)? = nil
     ) {
         self._viewModel = State(initialValue: viewModel)
         self.onCompleted = onCompleted
+        self.onCancel = onCancel
     }
 
     public var body: some View {
@@ -34,10 +40,15 @@ public struct RecordingView: View {
         .padding(32)
         .frame(minWidth: 480, minHeight: 400)
         .interactiveDismissDisabled(viewModel.isRecording || viewModel.isFinalizing)
-        .onChange(of: viewModel.isFinalizing) { _, newValue in
-            // Auto-dismiss when finalization completes (transitions to false).
-            if !newValue && viewModel.handle == nil {
-                onCompleted?()
+        .task {
+            // Auto-start recording when the sheet appears.
+            await viewModel.start()
+        }
+        .onChange(of: viewModel.completedEntry) { _, newValue in
+            // Auto-dismiss when the entry is committed (non-nil) to the view-model,
+            // which happens after stop() completes.
+            if let entry = newValue {
+                onCompleted?(entry)
                 dismiss()
             }
         }

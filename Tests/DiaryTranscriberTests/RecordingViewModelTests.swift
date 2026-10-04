@@ -35,5 +35,6 @@ final class RecordingViewModelTests: XCTestCase {
         XCTAssertFalse(vm.isRecording, "Should not be recording without starting")
         XCTAssertFalse(vm.isFinalizing, "isFinalizing should remain false")
         XCTAssertNil(vm.handle, "handle should remain nil")
+        XCTAssertNil(vm.completedEntry, "completedEntry should remain nil")
     }
 }

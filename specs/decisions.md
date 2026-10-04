@@ -90,3 +90,16 @@ Legend: ✅ **Accepted** · 🟡 **Pending** · ⛫ **Superseded**
 - **Decision:** Distribute as a code-signed `.app` bundle wrapped in a `.dmg`.
 - **Rationale:** A shareable app needs to install without Gatekeeper warnings.
 - **Supersedes:** —
+
+## D-0012 — Strict-concurrency enforcement: `.swiftLanguageMode(.v6)`
+- **Date:** 2026-10-04 · **Status:** ✅ Accepted
+- **Decision:** Enforce Swift 6 strict concurrency via `.swiftLanguageMode(.v6)`
+  in `Package.swift` on all three targets (executable, library, test). No
+  `.unsafeFlags(["-strict-concurrency=complete"])` is added; the Swift 6
+  language mode turns on strict-concurrency checking by default.
+- **Rationale:** `.swiftLanguageMode(.v6)` is equivalent to passing
+  `-strict-concurrency=complete` and is the canonical, toolchain-stable way to
+  opt in. Adding `.unsafeFlags` would be redundant and could clash on toolchains
+  where the flag default differs. An inline comment next to each
+  `swiftLanguageMode(.v6)` setting records this choice in `Package.swift`.
+- **Supersedes:** — (refines D-0007)

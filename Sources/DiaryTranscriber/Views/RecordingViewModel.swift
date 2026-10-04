@@ -18,6 +18,10 @@ public final class RecordingViewModel {
     private(set) var handle: RecordingHandle?
     private var timer: Task<Void, Never>?
 
+    /// The resulting DiaryEntry after recording stops, or nil if recording
+    /// has not completed (or was cancelled).
+    public private(set) var completedEntry: DiaryEntry?
+
     public init(recorder: AudioRecorder = AudioRecorder()) {
         self.recorder = recorder
     }
@@ -29,6 +33,7 @@ public final class RecordingViewModel {
             liveTranscript = ""
             elapsed = 0
             isFinalizing = false
+            completedEntry = nil
             handle = try await recorder.start()
             startTimer()
         } catch {
@@ -44,9 +49,15 @@ public final class RecordingViewModel {
 
         do {
             let audioURL = try await recorder.stop()
-            // In v1, transcription is a separate step.
-            // The live transcript from SpeechTranscriber would be finalized here.
-            _ = audioURL
+            let entry = DiaryEntry(
+                startedAt: handle!.startedAt,
+                durationSeconds: handle!.elapsed(),
+                audioPath: audioURL.path,
+                transcriptPath: audioURL.deletingPathExtension()
+                    .appendingPathExtension("md").path,
+                source: .none
+            )
+            completedEntry = entry
         } catch {
             liveTranscript = "Error: \(error.localizedDescription)"
         }
