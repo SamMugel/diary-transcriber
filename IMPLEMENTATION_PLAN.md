@@ -48,5 +48,5 @@ sorted by `Depends:`; within each level, sorted by `Priority` ascending.
 - [x] 10 file-system-watcher
 - [x] 13 entry-detail-view
 - [x] 15 timeline
-- [ ] 17 test-suites
-- [ ] 16 packaging
+- [x] 17 test-suites
+- [x] 16 packaging

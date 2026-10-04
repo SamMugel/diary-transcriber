@@ -6,63 +6,190 @@ can browse and replay.
 
 ## Status
 
-**In design.** The app described below is the target product. Spec documents
-under [`specs/`](specs/) — indexed in [SPECS.md](SPECS.md) — define the full
-vision, decisions, architecture, and subsystem contracts.
+**In active development.** All 17 PRDs implemented. Build and tests pass.
 
-- ✅ Product vision finalized — [`specs/product-vision.md`](specs/product-vision.md).
-- ✅ Architecture & decisions logged — [`specs/architecture.md`](specs/architecture.md), [`specs/decisions.md`](specs/decisions.md).
-- ✅ Build plan & phases — [`specs/build-plan.md`](specs/build-plan.md).
-- 🚧 Implementation: not started.
-
-## What the product will do
+## Features
 
 - **Record** an audio-only diary entry from your microphone (`.m4a` / AAC).
-- **Transcribe** it using Apple's on-device Speech framework, with an OpenAI
+- **Transcribe** using Apple's on-device Speech framework, with an OpenAI
   Whisper API fallback for low-quality or failed recognition.
 - **Store** entries as plain files under `~/Documents/Diary/`, indexed by a
   shared `manifest.json`.
 - **Browse** past entries in a SwiftUI timeline; tap any entry to read the full
   transcript and replay the audio.
+- **Edit** transcripts inline; changes save automatically.
 
-### Out of scope (explicit non-goals)
-
-- No video recording · no LLM post-processing (no summaries, themes, mood) · no
-  semantic search · no automation / scheduling · no cloud sync · no
-  multi-user. See [`specs/product-vision.md`](specs/product-vision.md).
-
-## Requirements (target release)
+## Requirements
 
 - macOS 14+ (Sonoma or newer).
 - Swift 6 (strict concurrency).
-- Xcode 16+ (for building the SwiftUI app).
+- Xcode 16+ / SwiftPM.
 - An OpenAI API key (optional, for Whisper fallback transcription).
 
-## Build & run
+## Install
 
-*Not yet implemented.* See [`specs/build-plan.md`](specs/build-plan.md) for the
-phased build-out.
+### From source (developer)
+
+```bash
+git clone https://github.com/sam.mugel/diary-transcriber.git
+cd diary-transcriber
+swift build
+```
+
+### From a release .dmg
+
+1. Download `DiaryTranscriber-1.0.0.dmg` from the [Releases](../../releases) page.
+2. Double-click the `.dmg` to mount it.
+3. Drag `DiaryTranscriber.app` to yourApplications folder.
+4. Eject the DMG.
+
+## Run
+
+### Command line (development)
+
+```bash
+swift run DiaryTranscriber
+```
+
+### From Xcode
+
+1. Open `Package.swift` in Xcode.
+2. Select the `DiaryTranscriber` scheme.
+3. Build and Run (⌘R).
+
+### From the app bundle
+
+Double-click `DiaryTranscriber.app` in Finder.
+
+## Configure
+
+On first launch:
+
+- **Output folder**: Defaults to `~/Documents/Diary/`. Change in Settings
+  (gear button → Output folder → choose folder).
+- **Transcription engine**: On-device Speech is enabled by default. For
+  Whisper API fallback, enter your OpenAI API key in Settings.
+  - API key is stored in your macOS Keychain, never in plaintext.
+  - The key is never included in error messages or logs.
+
+## Build & package
+
+### Build (debug)
+
+```bash
+swift build
+```
+
+### Build (release)
+
+```bash
+swift build -c release
+```
+
+### Package as .app
+
+```bash
+./scripts/package.sh
+```
+
+This runs `xcodebuild` with the Release configuration and produces
+`DiaryTranscriber.app` in `build/release/`.
+
+### Code signing
+
+#### Adhoc (for internal testing)
+
+```bash
+codesign -s - --timestamp -f build/release/DiaryTranscriber.app
+```
+
+#### Developer ID (for distribution)
+
+```bash
+codesign -s "Developer ID Application: Diary Transcriber" \
+  --timestamp --options runtime \
+  build/release/DiaryTranscriber.app
+```
+
+### Create .dmg
+
+```bash
+./scripts/create-dmg.sh
+```
+
+This produces `DiaryTranscriber-1.0.0.dmg` in `build/release/`.
+
+## Troubleshooting
+
+### Microphone permission denied
+
+macOS may block microphone access if run from Terminal the first time.
+Go to **System Settings → Privacy & Security → Microphone** and verify
+that Terminal (or Xcode) is allowed. For the .app bundle, the permission
+prompt appears on first launch.
+
+### Speech recognition not available
+
+On-device Speech requires a me system. If running on a headless CI
+machine where `SFSpeechRecognizer.isAvailable` returns `false`, the
+app will fall back to the Whisper API automatically. Set your OpenAI
+API key in Settings to enable Whisper fallback.
+
+### Build fails with "swift-tools-version 6.0"
+
+Ensure you have Swift 6.0 or newer (Xcode 16+):
+
+```bash
+swift --version
+```
+
+If using Xcode 16 but the command-line `swift` is older, install via
+[swift.org](https://swift.org/download/) or use `xcrun swift`.
+
+### Tests hang
+
+Tests that interact with the file system or require a microphone may be slow
+on first run. If tests appear to hang, wait up to 30 seconds for the
+FileSystemWatcher tests to detect file changes. In CI environments, use:
+
+```bash
+swift test --parallel
+```
+
+### Whisper API errors (HTTP 401)
+
+This means your API key is missing, empty, or invalid. Go to Settings → enter
+a valid OpenAI API key. The key is stored in Keychain and never written to
+disk in plaintext.
 
 ## Project layout
 
-The repository will be reorganized into:
-
 ```
 diary-transcriber/
-├── App/                  # SwiftUI @main App
-├── Sources/DiaryTranscriber/  # Models, Storage, Recording, Transcription, Playback, Views
-├── Resources/            # Info.plist, app icon
-├── Tests/                # XCTest suites
-├── specs/                # ← these spec documents
-└── README.md             # this file (will become the user guide)
+├── App/                     # SwiftUI @main App entry
+├── Sources/DiaryTranscriber/
+│   ├── Models/              # DiaryEntry, Transcript, TranscriptSource, etc.
+│   ├── Storage/             # DiaryStore, FileSystemWatcher, Manifest
+│   ├── Recording/           # AudioRecorder, PermissionManager
+│   ├── Transcription/       # SpeechTranscriber, WhisperClient, TranscriptionService
+│   ├── Playback/            # AudioPlayer
+│   └── Views/               # ContentView, EntryDetailView, RecordingView, SettingsView
+├── Resources/               # Info.plist, AppIcon
+├── Tests/                   # XCTest suites
+├── PRD/                     # Product Requirements Documents
+├── specs/                   # Product vision, architecture, decisions
+├── scripts/                 # Build & packaging scripts
+└── README.md                # This file
 ```
 
-Full target layout in [`specs/architecture.md`](specs/architecture.md).
+## License
+
+MIT License. See [LICENSE](LICENSE) for details.
 
 ## Decision log
 
 All product and technical decisions are recorded in
-[`specs/decisions.md`](specs/decisions.md). The key ones:
+[`specs/decisions.md`](specs/decisions.md). Key decisions:
 
 - D-0001 Shareable macOS desktop voice diary, not a CLI.
 - D-0002 Audio-only recording (video removed).
@@ -71,7 +198,3 @@ All product and technical decisions are recorded in
 - D-0005 Plain folder + JSON index storage.
 - D-0007 Swift 6 + macOS 14+ baseline.
 - D-0009 No LLM post-processing (transcript is the product).
-
-## License
-
-TBD.
