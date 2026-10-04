@@ -56,8 +56,9 @@ public actor AudioRecorder {
 
     public func stop() async throws -> URL {
         guard isRecording, let url = currentOutputURL else {
-            // Idempotent: if not recording, return an empty URL (no-op).
-            return URL(fileURLWithPath: "")
+            // AI: Device stop without active recording is a typed error, not a
+            //     silent sentinel URL. The ViewModel catches this to reset UI.
+            throw RecorderError.notRecording
         }
 
         try await endCapture()

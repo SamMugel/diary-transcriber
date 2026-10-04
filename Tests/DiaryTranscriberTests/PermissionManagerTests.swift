@@ -22,6 +22,11 @@ final class PermissionManagerTests: XCTestCase {
         XCTAssertEqual(error.errorDescription, "Recording session rejected the output configuration.")
     }
 
+    func testRecorderError_notRecording_hasDescriptiveMessage() {
+        let error = RecorderError.notRecording
+        XCTAssertEqual(error.errorDescription, "No recording is active.")
+    }
+
     func testRecorderError_recordingFailed_includesUnderlyingMessage() {
         let underlying = NSError(domain: "TestDomain", code: 42, userInfo: [
             NSLocalizedDescriptionKey: "Internal error"

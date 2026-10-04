@@ -21,7 +21,7 @@ sorted by `Depends:`; within each level, sorted by `Priority` ascending.
 | 12 | 38 | strict-concurrency-explicit | 1 | 4 | project-setup | done |
 | 13 | 20 | recording-delegate-deadlock | 2 | 1 | audio-recorder | done |
 | 14 | 21 | macos-microphone-permission | 2 | 1 | permission-manager, audio-recorder | todo |
-| 15 | 23 | recorder-stop-error-handling | 2 | 1 | audio-recorder | todo |
+| 15 | 23 | recorder-stop-error-handling | 2 | 1 | audio-recorder | done |
 | 16 | 11 | content-view | 2 | 3 | diary-store | todo |
 | 17 | 12 | recording-view | 2 | 4 | audio-recorder, speech-transcriber | todo |
 | 18 | 08 | transcription-service | 2 | 5 | speech-transcriber, whisper-client | done |

@@ -58,6 +58,11 @@ public final class RecordingViewModel {
                 source: .none
             )
             completedEntry = entry
+        } catch RecorderError.notRecording {
+            // AI: Idempotent stop path — recorder already stopped. Reset UI
+            //     without surfacing an error or emitting completedEntry.
+            liveTranscript = ""
+            completedEntry = nil
         } catch {
             liveTranscript = "Error: \(error.localizedDescription)"
         }

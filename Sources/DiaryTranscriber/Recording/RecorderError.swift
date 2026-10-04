@@ -13,6 +13,7 @@ enum RecorderError: LocalizedError {
     case permissionDenied(String)
     case noDevice
     case cannotAddOutput
+    case notRecording
     case recordingFailed(underlying: Error)
 
     var errorDescription: String? {
@@ -23,6 +24,8 @@ enum RecorderError: LocalizedError {
             "No audio input device found."
         case .cannotAddOutput:
             "Recording session rejected the output configuration."
+        case .notRecording:
+            "No recording is active."
         case .recordingFailed(let underlying):
             "Recording failed: \(underlying.localizedDescription)"
         }

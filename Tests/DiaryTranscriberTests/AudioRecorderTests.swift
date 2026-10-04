@@ -26,13 +26,16 @@ final class AudioRecorderTests: XCTestCase {
     }
 
     @MainActor
-    func testAudioRecorder_stopWhenNotRecording_isIdempotent() async throws {
+    func testAudioRecorder_stopWhenNotRecording_throwsNotRecording() async {
         let recorder = AudioRecorder()
-        // Calling stop() when not recording should not throw.
-        let result = try await recorder.stop()
-        // Calling stop() again should also not throw.
-        let result2 = try await recorder.stop()
-        // Both calls should return the same empty/sentinel URL.
-        XCTAssertEqual(result, result2, "Repeated stop() calls should be idempotent")
+        // Calling stop() when not recording must throw RecorderError.notRecording.
+        do {
+            _ = try await recorder.stop()
+            XCTFail("stop() without start() should throw RecorderError.notRecording")
+        } catch RecorderError.notRecording {
+            // Expected.
+        } catch {
+            XCTFail("Expected RecorderError.notRecording but got: \(error)")
+        }
     }
 }
