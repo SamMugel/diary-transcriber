@@ -44,9 +44,9 @@ sorted by `Depends:`; within each level, sorted by `Priority` ascending.
 - [x] 07 whisper-client
 - [x] 11 content-view
 - [x] 12 recording-view
-- [ ] 08 transcription-service
-    [ ] 10 file-system-watcher
-- [ ] 13 entry-detail-view
+- [x] 08 transcription-service
+- [x] 10 file-system-watcher
+- [x] 13 entry-detail-view
 - [ ] 15 timeline
 - [ ] 17 test-suites
 - [ ] 16 packaging
