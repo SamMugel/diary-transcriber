@@ -2,7 +2,7 @@
   "title": "ATS Handling Audit",
   "priority": 4,
   "depends": ["whisper-client", "finish-recording-error-feedback"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Audit NSAppTransportSecurity in Info.plist: confirm the exception for api.openai.com is present and scoped (NSAllowsArbitraryLoads=false); verify no broader exceptions",
     "Extend WhisperClientError with a networkUnavailable case mapping TLS-rejected / network-unavailable responses; errorDescription reads \"Network unavailable: transcription failed\"",
