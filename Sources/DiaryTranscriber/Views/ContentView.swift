@@ -15,6 +15,17 @@ public final class ListViewModel {
     public var isRecording = false
     public var showRecordingSheet = false
 
+    // AI: PRD #25 — non-fatal, user-facing error banner surfaced when finishRecording
+    //     fails to persist an entry. Cleared by the user via Dismiss or automatically
+    //     on a successful retry. nil = no banner.
+    public var errorBanner: String? = nil
+
+    // AI: PRD #25 — holds the entry + transcript from the last failed finishRecording
+    //     call so Retry can re-attempt the append step without the user re-recording.
+    //     Audio (the .m4a) was already written to ~/Documents by AudioRecorder before
+    //     finishRecording runs, so it is safe to retry the move+append.
+    private var lastFailedFinish: (DiaryEntry, Transcript?)? = nil
+
     private let store: DiaryStore?
     // AI: PRD #28 — shared TranscriptionService injected from AppEnvironment so view-models never
     //     default-construct a per-VM service. Optional + nil-default keeps existing tests that
@@ -110,9 +121,71 @@ public final class ListViewModel {
                 )
             }
 
+            // AI: PRD #25 — success: clear any prior error banner + retry state.
+            errorBanner = nil
+            lastFailedFinish = nil
+
             await refresh()
         } catch {
-            // Persist failed — refresh anyway so the user sees current state.
+            // AI: PRD #25 — never swallow with a bare catch. The error describes the
+            //     persistence failure; the audio file was already saved to ~/Documents
+            //     by AudioRecorder, so we surface that location so the user knows it's
+            //     not lost. Store the entry+transcript so Retry can re-attempt.
+            lastFailedFinish = (entry, transcript)
+            errorBanner = "Audio saved to ~/Documents, entry could not be saved: \(error.localizedDescription)"
+            await refresh()
+        }
+    }
+
+    // AI: PRD #25 — re-attempts the failed persistence step (move + append + setTranscript)
+    //     using the entry + transcript stashed in lastFailedFinish. Audio is not lost on
+    //     failure because AudioRecorder wrote the .m4a before finishRecording ever runs.
+    //     On success, the banner + retry state are cleared. On failure, the banner is
+    //     updated with the new error description so the user can retry again.
+    public func retryFinishRecording() async {
+        guard let (entry, transcript) = lastFailedFinish, let store else { return }
+        do {
+            let sourceURL = URL(filePath: entry.audioPath)
+            let filename = sourceURL.lastPathComponent
+            let relativeAudioPath = filename
+            let relativeTranscriptPath = sourceURL.deletingPathExtension()
+                .appendingPathExtension("md").lastPathComponent
+
+            let resolvedEntry = DiaryEntry(
+                id: entry.id,
+                startedAt: entry.startedAt,
+                durationSeconds: entry.durationSeconds,
+                audioPath: relativeAudioPath,
+                transcriptPath: relativeTranscriptPath,
+                source: entry.source,
+                createdAt: entry.createdAt,
+                updatedAt: entry.updatedAt
+            )
+
+            let storeFolder = await store.folderURL()
+            try? FileManager.default.createDirectory(
+                at: storeFolder,
+                withIntermediateDirectories: true
+            )
+            let destURL = storeFolder.appending(path: filename)
+            try? FileManager.default.removeItem(at: destURL)
+            try FileManager.default.moveItem(at: sourceURL, to: destURL)
+
+            try await store.append(entry: resolvedEntry)
+
+            if let transcript {
+                try await store.setTranscript(
+                    for: resolvedEntry.id,
+                    source: transcript.source,
+                    text: transcript.text
+                )
+            }
+
+            errorBanner = nil
+            lastFailedFinish = nil
+            await refresh()
+        } catch {
+            errorBanner = "Audio saved to ~/Documents, entry could not be saved: \(error.localizedDescription)"
             await refresh()
         }
     }
@@ -140,6 +213,66 @@ public struct EmptyState: View {
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+// AI:
+//   what: ErrorBanner — inline, non-blocking error banner shown at the top of ContentView
+//   why:  PRD #25 — when finishRecording fails to persist an entry, the user needs a clear
+//         message naming the failure and saved file location, plus Dismiss + Retry actions
+//   ref:  PRD 25-finish-recording-error-feedback
+
+public struct ErrorBanner: View {
+    public let message: String
+    public let onDismiss: () -> Void
+    public let onRetry: () -> Void
+
+    public init(message: String, onDismiss: @escaping () -> Void, onRetry: @escaping () -> Void) {
+        self.message = message
+        self.onDismiss = onDismiss
+        self.onRetry = onRetry
+    }
+
+    public var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "exclamation.triangle.fill")
+                .foregroundStyle(.orange)
+                .font(.headline)
+                .padding(.top, 2)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(message)
+                    .font(.callout)
+                    .foregroundStyle(.primary)
+                    .lineLimit(3)
+                HStack(spacing: 12) {
+                    Button("Retry", action: onRetry)
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    Button("Dismiss", action: onDismiss)
+                        .buttonStyle(.borderless)
+                        .controlSize(.small)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Spacer()
+            Button {
+                onDismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .foregroundStyle(.secondary)
+                    .font(.callout)
+            }
+            .buttonStyle(.borderless)
+        }
+        .padding(12)
+        .background(Color.yellow.opacity(0.15))
+        .overlay(
+            Rectangle()
+                .fill(Color.yellow.opacity(0.5))
+                .frame(height: 1)
+                .frame(maxHeight: .infinity, alignment: .bottom),
+            alignment: .bottom
+        )
     }
 }
 
@@ -207,17 +340,29 @@ public struct ContentView: View {
 
     @ViewBuilder
     private var content: some View {
-        if viewModel.entries.isEmpty {
-            EmptyState()
-        } else {
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    ForEach(viewModel.entries) { entry in
-                        NavigationLink(value: entry) {
-                            EntryRow(entry: entry)
+        VStack(spacing: 0) {
+            // AI: PRD #25 — inline non-blocking error banner at the top of the content
+            //     area. Yellow/orange background signals a recoverable error, not a crash.
+            //     Dismiss clears errorBanner; Retry re-invokes the failed persistence step.
+            if let errorMessage = viewModel.errorBanner {
+                ErrorBanner(
+                    message: errorMessage,
+                    onDismiss: { viewModel.errorBanner = nil },
+                    onRetry: { Task { await viewModel.retryFinishRecording() } }
+                )
+            }
+            if viewModel.entries.isEmpty {
+                EmptyState()
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(viewModel.entries) { entry in
+                            NavigationLink(value: entry) {
+                                EntryRow(entry: entry)
+                            }
+                            .buttonStyle(.plain)
+                            Divider()
                         }
-                        .buttonStyle(.plain)
-                        Divider()
                     }
                 }
             }
