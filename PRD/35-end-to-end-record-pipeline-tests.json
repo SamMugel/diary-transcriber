@@ -2,7 +2,7 @@
   "title": "End-to-End Record Pipeline Tests",
   "priority": 3,
   "depends": ["test-suites", "transcription-post-recording-pipeline"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Build stub/fake AudioRecorder and stubbed TranscriptionService (conforming to injected protocols) returning a fixed small .m4a fixture URL and a deterministic TranscriptUpdate.final — no real microphone or network",
     "Write an integration test that drives RecordingViewModel through start() → brief wait → stop(), asserts completedEntry is non-nil, then calls ListViewModel.finishRecording(entry:) and asserts the resulting DiaryEntry appears in store.entries()",
