@@ -2,7 +2,7 @@
   "title": "Recording Timer Leak Fix",
   "priority": 2,
   "depends": ["recording-view"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Add a teardown() method on RecordingViewModel that calls cancelTimer() (and flushes any in-flight transcription if present)",
     "Call viewModel.teardown() from RecordingView.onDisappear so sheet dismissal, app termination, or non-stop dismissal cancels the timer Task",
