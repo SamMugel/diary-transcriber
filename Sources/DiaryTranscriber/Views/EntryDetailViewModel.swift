@@ -14,12 +14,22 @@ public final class EntryDetailViewModel {
     public var transcriptText: String = ""
     public var hasUnsavedChanges = false
 
+    // AI: PRD #26 — re-transcription state surfaced to EntryDetailView.
+    //     `isRetranscribing` drives a ProgressView + disabled button while the
+    //     service's AsyncStream is iterating; `retranscribeError` is the typed
+    //     inline failure state (kept distinct from `transcriptText` so the user
+    //     can read the failure reason and retry).
+    //     See PRD/26-retranscribe-button.json.
+    public var isRetranscribing = false
+    public var retranscribeError: String = ""
+
     public let audioPlayer: AudioPlayer
 
     private let store: DiaryStore?
     // AI: PRD #28 — shared TranscriptionService injected from AppEnvironment. Optional + nil-default
-    //     so existing tests that construct `EntryDetailViewModel(entry:)` keep compiling. #28 only wires
-    //     it here; #26/#18 will consume it for re-transcription.
+    //     so existing tests that construct `EntryDetailViewModel(entry:)` keep compiling. #28 wired
+    //     the field; #18 left it consumed by RecordingViewModel; #26 now consumes it here for
+    //     re-transcription via `retranscribe()`. See PRD 26-retranscribe-button.json.
     private let transcriptionService: TranscriptionService?
 
     public init(
@@ -57,6 +67,59 @@ public final class EntryDetailViewModel {
     public func updateTranscript(_ text: String) {
         transcriptText = text
         hasUnsavedChanges = true
+    }
+
+    // AI:
+    //   what: retranscribe() — drives the TranscriptionService stream for a .none entry and
+    //         persists the final transcript onto disk.
+    //   why:  PRD #26 — the Re-transcribe button (visible only when entry.source == .none)
+    //         must re-run the hybrid Speech/Whisper pipeline and live-update the transcript
+    //         editor. We iterate the `AsyncStream<TranscriptUpdate>` returned by the service:
+    //           - `.partial(String)` updates `transcriptText` live so the user sees progress;
+    //           - `.final(Transcript)` persists the finalized text through `store.setTranscript`
+    //             (the manifest row already exists — the entry was appended during recording),
+    //             upgrades `entry.source` to the transcript's source, and clears the unsaved
+    //             flag (the .md file is now the source of truth);
+    //           - `.failed(String)` sets `retranscribeError` so the view can surface it inline
+    //             and the button can be re-enabled for retry.
+    //         `isRetranscribing` toggles around the whole iteration so the UI can show a
+    //         ProgressView and disable the button. It's reset in a defer so every exit path
+    //         (success, failure, or thrown) restores it. A missing service or store is a
+    //         silent no-op (mirrors the nil-default guard pattern in `loadData`/`saveIfChanged`).
+    //   ref:  PRD 26-retranscribe-button.json, PRD 18 (setTranscript lifecycle)
+    public func retranscribe() async {
+        guard let service = transcriptionService else { return }
+        guard let store else { return }
+        guard entry.source == .none else { return }
+
+        isRetranscribing = true
+        retranscribeError = ""
+        defer { isRetranscribing = false }
+
+        let audioURL = await store.url(for: entry)
+        let stream = await service.transcribe(at: audioURL)
+
+        for await update in stream {
+            switch update {
+            case .partial(let text):
+                transcriptText = text
+            case .final(let transcript):
+                do {
+                    try await store.setTranscript(
+                        for: entry.id,
+                        source: transcript.source,
+                        text: transcript.text
+                    )
+                    entry.source = transcript.source
+                    transcriptText = transcript.text
+                    hasUnsavedChanges = false
+                } catch {
+                    retranscribeError = error.localizedDescription
+                }
+            case .failed(let message):
+                retranscribeError = message
+            }
+        }
     }
 
     public func saveIfChanged() async {

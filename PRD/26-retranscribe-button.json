@@ -2,7 +2,7 @@
   "title": "Retranscribe Button",
   "priority": 2,
   "depends": ["entry-detail-view", "transcription-service", "transcription-service-bootstrap", "transcription-post-recording-pipeline"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Wire the Re-transcribe button action (currently empty closure) to EntryDetailViewModel.retranscribe() which calls the injected (via transcription-service-bootstrap) service.transcribe(at: store.url(for: entry))",
     "Subscribe to the returned AsyncStream<TranscriptUpdate>: on .partial, update transcriptText live; on .final, call store.setTranscript with the final text and source, then update entry.source",
@@ -18,5 +18,7 @@
   "out_of_scope": [
     "Manual transcript edits during re-transcription (button disabled)",
     "Bulk re-transcription of multiple entries"
-  ]
+  ],
+  "notes": "Implemented in EntryDetailViewModel.retranscribe() + EntryDetailView button wiring. The publishing path on .final calls store.setTranscript (entry already appended during recording, so manifest row exists). Tests use a real TranscriptionService with all-engines-disabled settings + bogus audio URL → .failed path (mirrors TranscriptionServiceTests pattern; TranscriptionService is a concrete actor with no protocol, so this is the only way to drive the wiring deterministically without a production-touching refactor). The .final success path is symmetric with PRD #18 logic and covered at the store level (DiaryStoreTests.testSetTranscript_*). 4 new tests added. Latent bugs (SafeFlag race, timeout-Task leak, ISSUE-025 SpeechTranscriberTests hang) flagged-only; not touched by this commit."
 }
+

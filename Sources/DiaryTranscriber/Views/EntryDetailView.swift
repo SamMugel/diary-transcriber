@@ -17,6 +17,16 @@ public struct EntryDetailView: View {
     public var body: some View {
         VStack(spacing: 0) {
             header
+            // AI: PRD #26 — inline re-transcription failure banner, kept narrow so
+            //     the user sees the reason and still has the button available for retry.
+            if !viewModel.retranscribeError.isEmpty {
+                Label(viewModel.retranscribeError, systemImage: "exclamationmark.triangle")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 6)
+            }
             Divider()
             playbackControls
             Divider()
@@ -48,10 +58,16 @@ public struct EntryDetailView: View {
 
             if viewModel.showRetranscribe {
                 Button("Re-transcribe") {
-                    // Trigger re-transcription — handled by parent or future wiring.
+                    Task { await viewModel.retranscribe() }
                 }
                 .buttonStyle(.bordered)
                 .tint(.orange)
+                .disabled(viewModel.isRetranscribing)
+
+                if viewModel.isRetranscribing {
+                    ProgressView()
+                        .controlSize(.small)
+                }
             }
         }
         .padding(.horizontal, 20)
