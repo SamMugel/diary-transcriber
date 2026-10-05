@@ -181,7 +181,15 @@
 
 ## P4 — Polishing & build
 
-### ISSUE-021 — `package.sh` doesn't `cd` to project root before `xcodebuild`
+### ISSUE-025 — `SpeechTranscriberTests` hangs headless CI (liveStream never returns)
+
+- **Files:** `Tests/DiaryTranscriberTests/SpeechTranscriberTests.swift`, `Sources/DiaryTranscriber/Transcription/SpeechTranscriber.swift`
+- **Problem:** `SpeechTranscriber()` constructs an `SFSpeechRecognizer` which is `nil` on the headless CI agent. `testLiveStream_returnsEmptyStreamWhenSpeechUnavailable` and `testLiveStream_canBeCancelledWithoutError` call `liveStream()`, whose `onTermination` cancellation does not fire if the underlying recognizer is `nil` and the stream has no producer; `for await text in stream` blocks forever. `testTranscribe_nonExistentFile_raisesSpeechUnavailableOrSpeechError` can also stall on a `nil` recognizer path. Running the full `swift test` suite therefore hangs with no output beyond `Build complete!`. Reproducible on `main` with `swift test --filter SpeechTranscriberTests` (no test result lines emitted; killed by timeout). NOT a regression from PRD #28 — `SpeechTranscriber.swift` and this test file are untouched by #28; the hang was surfaced while validating #28 and confirmed against the clean tree.
+- **Expected:** `liveStream()` must guarantee the stream finishes (yields zero values and returns) when `SFSpeechRecognizer` is `nil` or unavailable, rather than awaiting a producer that will never run. `transcribe(at:)` should also finalize on all unreachable-recognizer paths.
+- **Acceptance:** `swift test --filter SpeechTranscriberTests` completes in <5 s on a headless machine with all assertions passing; `swift test` (full suite) no longer hangs.
+- **Out of scope for PRD #28 commit:** Documented only; `SpeechTranscriber` cancellation/finalization fix belongs in its own PRD (speech-transcriber resilience / liveStream finalization).
+
+
 
 - **Files:** `scripts/package.sh`
 - **Problem:** The script sets `PROJECT_ROOT` but never `cd`s there. `xcodebuild -scheme DiaryTranscriber` searches the current directory for the workspace; invoked from anywhere else, it fails with "Scheme not found".
@@ -248,3 +256,4 @@
 | strict-concurrency-explicit | ISSUE-022 | P4 | project-setup |
 | info-plist-speech-recognition-key | ISSUE-023 | P4 | packaging |
 | ats-handling-audit | ISSUE-024 | P4 | whisper-client |
+| speech-transcriber-livestream-finalize | ISSUE-025 | P3 | speech-transcriber |

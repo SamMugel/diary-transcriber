@@ -17,15 +17,21 @@ public final class EntryDetailViewModel {
     public let audioPlayer: AudioPlayer
 
     private let store: DiaryStore?
+    // AI: PRD #28 — shared TranscriptionService injected from AppEnvironment. Optional + nil-default
+    //     so existing tests that construct `EntryDetailViewModel(entry:)` keep compiling. #28 only wires
+    //     it here; #26/#18 will consume it for re-transcription.
+    private let transcriptionService: TranscriptionService?
 
     public init(
         entry: DiaryEntry,
         store: DiaryStore? = nil,
-        audioPlayer: AudioPlayer = AudioPlayer()
+        audioPlayer: AudioPlayer = AudioPlayer(),
+        transcriptionService: TranscriptionService? = nil
     ) {
         self.entry = entry
         self.store = store
         self.audioPlayer = audioPlayer
+        self.transcriptionService = transcriptionService
     }
 
     public var showRetranscribe: Bool {

@@ -2,7 +2,7 @@
   "title": "Transcription Service Bootstrap",
   "priority": 2,
   "depends": ["transcription-service", "settings-view"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Build a single shared TranscriptionService at app launch with a WhisperClient(apiKey:) constructed from the Keychain API key; when no key is set, whisperClient is nil and Whisper fallback is skipped gracefully (not a crash)",
     "Inject the shared TranscriptionService into RecordingViewModel and EntryDetailViewModel via constructor parameters or an AppEnvironment (never default-construct a per-VM service)",

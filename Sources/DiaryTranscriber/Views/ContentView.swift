@@ -16,9 +16,15 @@ public final class ListViewModel {
     public var showRecordingSheet = false
 
     private let store: DiaryStore?
+    // AI: PRD #28 — shared TranscriptionService injected from AppEnvironment so view-models never
+    //     default-construct a per-VM service. Optional + nil-default keeps existing tests that
+    //     construct `ListViewModel(store:)` compiling. This reference is only consumed by downstream
+    //     PRDs (#18) and #28 only wires it here; finishRecording() is unchanged.
+    private let transcriptionService: TranscriptionService?
 
-    public init(store: DiaryStore? = nil) {
+    public init(store: DiaryStore? = nil, transcriptionService: TranscriptionService? = nil) {
         self.store = store
+        self.transcriptionService = transcriptionService
         Task { await refresh() }
     }
 
@@ -123,14 +129,18 @@ public struct EmptyState: View {
 
 public struct ContentView: View {
 
+    @Environment(AppEnvironment.self) private var env
     @State private var viewModel: ListViewModel
     @State private var showSettings = false
 
-    private let store: DiaryStore?
-
-    public init(store: DiaryStore? = nil) {
-        self.store = store
-        self._viewModel = State(initialValue: ListViewModel(store: store))
+    // AI: PRD #28 — ContentView now resolves the shared AppEnvironment delivered from @main and
+    //     forwards the transcriptionService/store into the view-models rather than default-
+    //     constructing them. The previous store-only init is preserved as a nil-default convenience
+    //     so #Preview still works without an injected env (the .environment is added there too).
+    public init(store: DiaryStore? = nil, transcriptionService: TranscriptionService? = nil) {
+        self._viewModel = State(
+            initialValue: ListViewModel(store: store, transcriptionService: transcriptionService)
+        )
     }
 
     public var body: some View {
@@ -139,7 +149,11 @@ public struct ContentView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .navigationDestination(for: DiaryEntry.self) { entry in
                     EntryDetailView(
-                        viewModel: EntryDetailViewModel(entry: entry, store: store)
+                        viewModel: EntryDetailViewModel(
+                            entry: entry,
+                            store: env.store,
+                            transcriptionService: env.transcriptionService
+                        )
                     )
                 }
                 .toolbar { toolbarContent }
@@ -147,6 +161,7 @@ public struct ContentView: View {
         .frame(minWidth: 720, minHeight: 540)
         .sheet(isPresented: $viewModel.showRecordingSheet) {
             RecordingView(
+                viewModel: RecordingViewModel(transcriptionService: env.transcriptionService),
                 onCompleted: { entry in
                     Task {
                         await viewModel.finishRecording(entry: entry)
@@ -158,7 +173,7 @@ public struct ContentView: View {
             )
         }
         .sheet(isPresented: $showSettings) {
-            SettingsView()
+            SettingsView(viewModel: env.settings)
                 .frame(minWidth: 460)
         }
     }
@@ -305,4 +320,5 @@ import AppKit
 
 #Preview {
     ContentView()
+        .environment(AppEnvironment())
 }

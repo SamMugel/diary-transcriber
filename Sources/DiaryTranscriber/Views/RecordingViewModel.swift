@@ -17,6 +17,10 @@ public final class RecordingViewModel {
 
     private let recorder: AudioRecorder
     private let speechTranscriber: SpeechTranscriber?
+    // AI: PRD #28 — shared TranscriptionService injected from AppEnvironment. Optional + nil-default
+    //     so existing tests that construct `RecordingViewModel()` keep compiling. #28 only wires it
+    //     here; stop() is unchanged (the actual transcription call lands in #18).
+    private let transcriptionService: TranscriptionService?
     private(set) var handle: RecordingHandle?
     private var timer: Task<Void, Never>?
     private var liveStreamTask: Task<Void, Never>?
@@ -27,12 +31,14 @@ public final class RecordingViewModel {
 
     public init(
         recorder: AudioRecorder = AudioRecorder(),
-        speechTranscriber: SpeechTranscriber? = nil
+        speechTranscriber: SpeechTranscriber? = nil,
+        transcriptionService: TranscriptionService? = nil
     ) {
         self.recorder = recorder
         // AI: Default to a shared SpeechTranscriber when not injected. Tests can
         //     pass nil to skip live transcription entirely.
         self.speechTranscriber = speechTranscriber ?? SpeechTranscriber()
+        self.transcriptionService = transcriptionService
     }
 
     public var isRecording: Bool { handle != nil && !isFinalizing }

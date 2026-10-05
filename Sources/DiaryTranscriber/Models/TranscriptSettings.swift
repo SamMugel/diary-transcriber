@@ -6,7 +6,7 @@ import Foundation
 //         and API key; these control TranscriptionService fallback behavior
 //   ref:  specs/transcription.md, specs/ui.md SettingsView
 
-public struct TranscriptSettings: Codable, Equatable {
+public struct TranscriptSettings: Codable, Equatable, Sendable {
     public var useOnDeviceSpeech: Bool = true
     public var useWhisperFallback: Bool = true
 

@@ -7,6 +7,7 @@ import SwiftUI
 //   ref:  specs/ui.md SettingsView, D-0004
 
 public struct SettingsView: View {
+    @Environment(AppEnvironment.self) private var env
     @State private var viewModel: SettingsViewModel
     // AI: local buffer for the API-key field; SecureField binds here, not to Keychain, so each keystroke
     //     only mutates this @State and never touches SecItem; commitAPIKey persists it on demand / PRD 30
@@ -56,13 +57,18 @@ public struct SettingsView: View {
                 //     happens on .onSubmit, .onDisappear, or explicit Save only / PRD 30
                 SecureField("OpenAI API Key", text: $apiKeyInput)
                     .onSubmit {
-                        // AI: commit on Return so a user who submits the field persists immediately / PRD 30
+                        // AI: commit on Return so a user who submits the field persists immediately / PRD 30.
+                        //     PRD #28: after commit, rebuild the WhisperClient on the shared service so the
+                        //     new key takes effect without restarting the app (criterion 2).
                         viewModel.commitAPIKey(apiKeyInput)
+                        env.reloadWhisperClient()
                     }
 
-                // AI: explicit Save button so a user can persist the buffered key without leaving / PRD 30
+                // AI: explicit Save button so a user can persist the buffered key without leaving / PRD 30.
+                //     PRD #28: same reload as .onSubmit — the Whisper fallback must pick up the new key.
                 Button("Save API Key") {
                     viewModel.commitAPIKey(apiKeyInput)
+                    env.reloadWhisperClient()
                 }
             }
 
@@ -80,9 +86,11 @@ public struct SettingsView: View {
         }
         .onDisappear {
             // AI: persist toggles to UserDefaults and commit any buffered-but-unsubmitted API key
-            //     when the sheet closes — single write path, no per-keystroke Keychain churn / PRD 29, PRD 30
+            //     when the sheet closes — single write path, no per-keystroke Keychain churn / PRD 29, PRD 30.
+            //     PRD #28: reload the Whisper fallback so a dialog dismissed after Save keeps the new key.
             viewModel.commitAPIKey(apiKeyInput)
             viewModel.save()
+            env.reloadWhisperClient()
         }
     }
 
@@ -103,3 +111,8 @@ public struct SettingsView: View {
 #if canImport(AppKit)
 import AppKit
 #endif
+
+#Preview {
+    SettingsView()
+        .environment(AppEnvironment())
+}

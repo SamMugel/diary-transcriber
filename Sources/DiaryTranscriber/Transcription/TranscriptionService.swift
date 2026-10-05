@@ -9,7 +9,10 @@ import Foundation
 public actor TranscriptionService {
 
     private let speechTranscriber: SpeechTranscriber
-    private let whisperClient: WhisperClient?
+    // AI: `var` so replaceWhisperClient(_) can rebuild the client after a Settings API-key commit,
+    //     reloading the Whisper fallback without restarting the app or recreating the Speech engine
+    //     (which carries no state and is expensive to spin up). PRD #28 criterion 2 / ref: PRD 28
+    private var whisperClient: WhisperClient?
     private let settings: TranscriptSettings
 
     public init(
@@ -23,6 +26,29 @@ public actor TranscriptionService {
     }
 
     // MARK: - Public API
+
+    /// Replaces the Whisper client used for fallback transcription.
+    // AI:
+    //   what: Hot-swaps the WhisperClient on the shared actor instance
+    //   why:  PRD #28 — when the user commits a new OpenAI API key in Settings, the Whisper
+    //         fallback must reload without restarting the app. Approach R over Approach S so
+    //         view-models keep a stable `let service` reference and the stateless
+    //         SpeechTranscriber is not needlessly recreated.
+    //   ref:  PRD 28-transcription-service-bootstrap, acceptance criterion 2
+    public func replaceWhisperClient(_ client: WhisperClient?) {
+        whisperClient = client
+    }
+
+    /// Test-only accessor reflecting whether a Whisper client is currently wired.
+    // AI:
+    //   what: Actor-isolated read of whisperClient presence for tests
+    //   why:  PRD #28 AppEnvironmentTests needs to assert that a Keychain-backed key boots a
+    //         WhisperClient-backed service and that a missing key yields nil — without exposing
+    //         the private field directly. Read-only and nonisolated-safe behind actor isolation.
+    //   ref:  PRD 28-transcription-service-bootstrap, AppEnvironmentTests
+    public func hasWhisperClient() -> Bool {
+        whisperClient != nil
+    }
 
     public func transcribe(at audioURL: URL) -> AsyncStream<TranscriptUpdate> {
         AsyncStream { continuation in
