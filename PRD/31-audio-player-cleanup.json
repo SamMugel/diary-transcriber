@@ -2,7 +2,7 @@
   "title": "Audio Player Cleanup on Disappear",
   "priority": 3,
   "depends": ["audio-player", "entry-detail-view"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Add .onDisappear { viewModel.audioPlayer.cleanup() } to EntryDetailView",
     "Ensure AudioPlayer.cleanup() is idempotent — safe to call multiple times (stop timer if running, set player = nil, reset currentPlaybackTime = 0)"
