@@ -2,7 +2,7 @@
   "title": "Recording Sheet Cancel & Cleanup",
   "priority": 1,
   "depends": ["recording-view"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Add a visible Cancel/Close Button to RecordingView in all states (recording, not-recording, finalizing): labeled 'Cancel' during recording and triggering onCancel; disabled during finalizing, re-enabled as 'Close' after pipeline completion",
     "Add .onDisappear { onCancel() } fallback on RecordingView so external dismissal (window close, Escape) triggers onCancel when completedEntry is nil",
