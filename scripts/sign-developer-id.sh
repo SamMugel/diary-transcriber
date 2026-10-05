@@ -7,7 +7,7 @@
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-APP_PATH="${1:-$PROJECT_ROOT/build/release/Build/Products/Release/DiaryTranscriber.app}"
+APP_PATH="${1:-$PROJECT_ROOT/build/release/DiaryTranscriber.app}"
 SIGN_IDENTITY="Developer ID Application: Diary Transcriber"
 
 if [ ! -d "$APP_PATH" ]; then

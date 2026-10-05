@@ -44,7 +44,7 @@ swift build
 
 1. Download `DiaryTranscriber-1.0.0.dmg` from the [Releases](../../releases) page.
 2. Double-click the `.dmg` to mount it.
-3. Drag `DiaryTranscriber.app` to yourApplications folder.
+3. Drag `DiaryTranscriber.app` to your Applications folder.
 4. Eject the DMG.
 
 ## Run
@@ -134,7 +134,7 @@ prompt appears on first launch.
 
 ### Speech recognition not available
 
-On-device Speech requires a me system. If running on a headless CI
+On-device Speech requires an active macOS system. If running on a headless CI
 machine where `SFSpeechRecognizer.isAvailable` returns `false`, the
 app will fall back to the Whisper API automatically. Set your OpenAI
 API key in Settings to enable Whisper fallback.

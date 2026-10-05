@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <!-- Diary Transcriber app icon template -->
-  <!-- Replace with final design. To generate .icns run:
-      sips -s format icns Resources/AppIcon-1024.png --out Resources/AppIcon.icns
-  -->
+  <!-- Diary Transcriber app icon template.
+       To generate .icns run:
+         sips -s format icns Resources/AppIcon-1024.png -o Resources/AppIcon.icns -->
   <rect width="1024" height="1024" rx="224" fill="#2C2C3E"/>
   <g transform="translate(512 512)">
     <!-- Microphone body -->

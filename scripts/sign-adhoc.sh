@@ -5,7 +5,7 @@
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-APP_PATH="${1:-$PROJECT_ROOT/build/release/Build/Products/Release/DiaryTranscriber.app}"
+APP_PATH="${1:-$PROJECT_ROOT/build/release/DiaryTranscriber.app}"
 
 if [ ! -d "$APP_PATH" ]; then
   echo "error: $APP_PATH not found. Run ./scripts/package.sh first."
