@@ -70,11 +70,28 @@ public struct RecordingView: View {
                 dismiss()
             }
         }
-        // AI: PRD #22 — fallback for external dismissal (window close, Escape via
-        //     toolbar). If completedEntry is nil (not auto-dismissed via onChange),
-        //     ensure the recording is torn down, any partial .m4a is removed, and
-        //     onCancel is invoked to reset ListViewModel state.
+        // AI: PRD #22 + PRD #24 — fallback for external dismissal (window close,
+        //     Escape via toolbar, sheet swipe). If completedEntry is nil (not
+        //     auto-dismissed via onChange), ensure the recording is torn down,
+        //     any partial .m4a is removed, and onCancel is invoked to reset
+        //     ListViewModel state. PRD #24 additionally calls `teardown()` so the
+        //     periodic `timer` Task and `liveStreamTask` are cancelled & nilled
+        //     here in every dismissal path — whether the recording completed,
+        //     was in progress, or was mid-finalize — so no Task lingers in the
+        //     heap referencing the discarded view-model.
         .onDisappear {
+            // AI: Always tear down the view-model's background Tasks. This is safe
+            //     to call from any state (idle, recording, finalizing) and is
+            //     idempotent; `teardown()` guards every internal step.
+            //     `.onDisappear` is synchronous, so we wrap the async teardown in a
+            //     detached MainActor Task. The Task-cancellation work inside
+            //     teardown runs synchronously before its first await, so the
+            //     dangerous side-effectful work happens immediately on dismissal;
+            //     the subsequent recorder.stop() completes off the dismiss path.
+            Task { @MainActor [viewModel] in
+                await viewModel.teardown()
+            }
+
             guard !hasCancelled, viewModel.completedEntry == nil else { return }
             hasCancelled = true
             let outputURL = viewModel.handle?.outputURL

@@ -27,8 +27,12 @@ public final class RecordingViewModel {
     //     here; stop() drives it in #18.
     private let transcriptionService: TranscriptionService?
     private(set) var handle: RecordingHandle?
-    private var timer: Task<Void, Never>?
-    private var liveStreamTask: Task<Void, Never>?
+    // AI: PRD #24 — exposed as `internal private(set)` so the recycled `@testable`
+    //     test target can assert that `teardown()` cancels the timer/live-stream
+    //     Tasks. Writes stay private to the class; reads widen only across the
+    //     module boundary (no public API change).
+    internal private(set) var timer: Task<Void, Never>?
+    internal private(set) var liveStreamTask: Task<Void, Never>?
 
     /// The resulting DiaryEntry after recording stops, or nil if recording
     /// has not completed (or was cancelled).
@@ -189,6 +193,47 @@ public final class RecordingViewModel {
         liveTranscript = ""
     }
 
+    // AI:
+    //   what: teardown() — unconditional release of all background Tasks owned by the view-model
+    //   why:  PRD #24 — when RecordingView is dismissed (sheet, Escape, window close),
+    //         the view's .onDisappear must guarantee that the periodic `timer` Task and the
+    //         `liveStreamTask` are cancelled and nilled, otherwise they outlive the view-model
+    //         and linger in the heap. Unlike `stop()` and `cancelRecording()`, this is meant
+    //         to be called *defensively* from any state (idle, recording, finalizing) and
+    //         must never crash — it mirrors the Swift rule "teardown should be idempotent".
+    //         If recording is active it also halts the underlying recorder (best-effort) so a
+    //         microphone session is never left orphaned; if a transcription pipeline is
+    //         in-flight (`isFinalizing`), the Tasks it depends on are cancelled so the
+    //         in-flight Task cannot resume work after dismissal.
+    //   ref:  PRD 24-recording-timer-leak
+    public func teardown() async {
+        cancelTimer()
+        cancelLiveStream()
+
+        // AI: If a recorder session is still active at teardown time, release it.
+        //     We do NOT call `cancelRecording()` here because that method guards
+        //     on `!isFinalizing` and would no-op during in-flight transcription;
+        //     teardown is unconditional. We directly stop the recorder (discarding
+        //     the partial file the same way `cancelRecording` does) and clear the
+        //     handle so `isRecording` reports false for the discarded view-model.
+        if handle != nil {
+            do {
+                _ = try await recorder.stop()
+            } catch {
+                // Best-effort; the recorder may already be stopped or never started.
+                print("[RecordingViewModel] teardown: recorder.stop() error: \(error.localizedDescription)")
+            }
+            handle = nil
+        }
+
+        // AI: Clear any in-flight transcription state so a finalizing view-model
+        //     dismissed mid-stream doesn't leave `isFinalizing` stuck true; the
+        //     pipeline Tasks were already cancelled above so no background work
+        //     continues. `completedEntry` is left as-is so a completed-but-not-yet
+        //     dismissed view-model still propagates the entry through onCompleted.
+        isFinalizing = false
+    }
+
     /// Deletes a partial .m4a file left behind after a cancelled recording
     /// (`completedEntry == nil`). Called by `RecordingView` on cancel/dismiss.
     /// Errors are caught and logged only — the file may already be removed or
@@ -228,6 +273,16 @@ public final class RecordingViewModel {
         timer?.cancel()
         timer = nil
     }
+
+    // AI: PRD #24 — internal test seam that mirrors `startTimer()` exactly but
+    //     does NOT require a microphone (which `start()` would need). Lets the
+    //     teardown tests drive a real `Task<Void, Never>?` through the public
+    //     `teardown()` path so we assert cancellation on the genuine object.
+    #if DEBUG
+    internal func startTimerForTest() {
+        startTimer()
+    }
+    #endif
 
     // MARK: - Private: Live Transcript Stream
 
