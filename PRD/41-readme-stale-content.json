@@ -2,7 +2,7 @@
   "title": "README Stale Content Fix",
   "priority": 4,
   "depends": ["packaging"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Rewrite the ## Status section of README.md to state that the MVP is feature-complete: PRDs 01–40 are implemented, build/test-clean, and that transcription is wired into recording (AppEnvironment constructs TranscriptionService with a WhisperClient from Keychain; finishRecording persists the transcript via DiaryStore.setTranscript)",
     "Remove from README.md the sentence 'recording works but transcription is never injected/invoked — see the PRD 18 entry point for the current work item' and any pointer to PRD 18 as the active work item",
@@ -18,5 +18,6 @@
     "Rewriting the Install, Run, Troubleshooting, or Design-decisions sections of README.md (owned by PRD 16 packaging)",
     "Adding new user-facing documentation outside README.md",
     "Changing Package.swift's deployment target"
-  ]
+  ],
+  "notes": "Edited README.md only, two surgical edits. (1) ## Status section (lines 9-14): replaced stale 'In active development / PRDs 18-40 remain todo / transcription is never injected/invoked — see the PRD 18 entry point' text with feature-complete statement: PRDs 01-40 implemented, build/test-clean, transcription wired into recording (AppEnvironment constructs TranscriptionService with WhisperClient from Keychain; finishRecording persists transcript via DiaryStore.setTranscript); PRDs 41-42 noted as follow-up QA fixes. (2) ## Requirements (line 29): changed '- macOS 14+ (Sonoma or newer).' to '- macOS 15.0 or newer (Sequoia).' Out-of-scope Decision log line 204 (D-0007 historical entry) left untouched. Validation: swift build succeeded (0 errors, 0 warnings); swift test passed 158/0 in 15.1s. Grep confirms: 'transcription is never injected' absent from README.md; 'macOS 15.0 or newer (Sequoia)' present on line 29; Package.swift line 10 shows .macOS(.v15) — README ## Requirements now matches Package.swift target."
 }

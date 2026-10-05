@@ -6,11 +6,12 @@ can browse and replay.
 
 ## Status
 
-**In active development.** PRDs 01–17 (MVP) are implemented and build/test
-clean. PRDs 18–40 are 23 follow-up fixes from the code review (see
-`CODE_REVIEW_ISSUES.md`) and remain `todo`. Until those land, recording works
-but transcription is never injected/invoked — see the PRD 18 entry point for
-the current work item.
+**Feature-complete (MVP).** PRDs 01–40 are implemented and the build is clean
+with all tests passing. Transcription is wired into recording:
+`AppEnvironment` constructs the `TranscriptionService` with a `WhisperClient`
+backed by an OpenAI API key stored in Keychain; `finishRecording` persists the
+resulting transcript via `DiaryStore.setTranscript`. PRDs 41–42 are follow-up
+QA fixes for packaging and documentation polish.
 
 ## Features
 
@@ -25,7 +26,7 @@ the current work item.
 
 ## Requirements
 
-- macOS 14+ (Sonoma or newer).
+- macOS 15.0 or newer (Sequoia).
 - Swift 6 (strict concurrency).
 - Xcode 16+ / SwiftPM.
 - An OpenAI API key (optional, for Whisper fallback transcription).
