@@ -2,7 +2,7 @@
   "title": "Package Script CWD Fix",
   "priority": 4,
   "depends": ["packaging"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Add `cd \"$PROJECT_ROOT\"` immediately after PROJECT_ROOT is computed and before invoking xcodebuild; fail fast (set -e or explicit test) with a clear message if the directory is unreachable"
   ],
