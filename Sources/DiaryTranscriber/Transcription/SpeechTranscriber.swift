@@ -211,7 +211,7 @@ public enum TranscriptionError: LocalizedError {
         case .whisperTimeout:
             "Whisper API request timed out after 120 seconds."
         case .networkUnavailable:
-            "No internet connection available for transcription."
+            "Network unavailable: transcription failed"
         }
     }
 }

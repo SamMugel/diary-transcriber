@@ -95,8 +95,80 @@ public actor WhisperClient {
     private nonisolated func sendRequest(
         _ request: URLRequest
     ) async throws -> (Data, URLResponse) {
-        return try await URLSession.shared.data(for: request)
+        do {
+            return try await URLSession.shared.data(for: request)
+        } catch {
+            // AI: PRD #40 — map TLS-rejected / network-unavailable URLSession errors to
+            //     TranscriptionError.networkUnavailable so the failure surfaces to the user
+            //     via the error-banner pathway instead of propagating a bare URLError that
+            //     the TranscriptionService would restate as "Transcription failed: …".
+            //     A 120s server-side timeout (URLSession's timeoutInterval) is left to the
+            //     TranscriptionService's outer timeout wrapper, which already emits
+            //     whisperTimeout — so timedOut is NOT remapped here.
+            throw Self.classifyURLError(error)
+        }
     }
+
+    // AI:
+    //   what: classifyURLError — decides whether a URLSession-thrown error is a
+    //         network/TLS failure that should surface as networkUnavailable
+    //   why:  PRD #40 — TLS handshake failures (secureConnectionFailed, a TLS-
+    //         rejected CA or cipher mismatch) and link-level failures (no route
+    //         to host, cannot connect, not connected to internet, DNS lookup
+    //         failure) all represent "the request never reached OpenAI"; they
+    //         must surface the typed networkUnavailable case so the user sees
+    //         "Network unavailable: transcription failed" in the error banner.
+    //         Non-transport URLErrors (e.g. badURL) and non-network exceptions
+    //         pass through unchanged so the caller's catch-all in
+    //         TranscriptionService can still format them generically.
+    //   ref:  PRD 40-ats-handling-audit, acceptance criteria 1 & 2
+    private nonisolated static func classifyURLError(_ error: Error) -> Error {
+        guard let urlError = error as? URLError else {
+            return error
+        }
+
+        switch urlError.code {
+        // Physical transport failures — the host could not be reached.
+        case .notConnectedToInternet,
+             .cannotFindHost,
+             .cannotConnectToHost,
+             .networkConnectionLost,
+             .dnsLookupFailed,
+             .dataNotAllowed:
+            return TranscriptionError.networkUnavailable
+
+        // TLS handshake / certificate rejection — distinct from an app-side ATS
+        // load (ATS enforcement happens before the URLSession error is even
+        // thrown), but this is the path taken when OpenAI rotates certs or
+        // rotates a TLS configuration that the App's pinned connection does
+        // not yet accept. Treat as a network failure per the PRD's "TLS-
+        // rejected" criterion. These are the cert-validation failures exposed
+        // by Foundation's URLError.Code; other revocation/expiry conditions
+        // surface as secureConnectionFailed on this platform.
+        case .secureConnectionFailed,
+             .serverCertificateUntrusted,
+             .serverCertificateHasBadDate,
+             .serverCertificateNotYetValid:
+            return TranscriptionError.networkUnavailable
+
+        default:
+            return error
+        }
+    }
+
+    // AI: PRD #40 — test-only pass-through for the private classifyURLError classifier.
+    //     Lets ATSHandlingAuditTests assert the URLError → TranscriptionError mapping
+    //     without hitting the network (WhisperClient's endpoint is hardcoded to
+    //     api.openai.com, so a live request would be non-deterministic in CI).
+    //     Mirrors the `#if DEBUG internal` seam convention used by
+    //     RecordingViewModel.startTimerForTest(). Reads exactly the same code path as
+    //     the production sendRequest catch.
+    //   ref: PRD 40-ats-handling-audit
+    #if DEBUG
+    internal nonisolated static func classifyURLErrorForTest(_ error: Error) -> Error {
+        classifyURLError(error)
+    }
+    #endif
 
     // MARK: - Private: Response parsing
 

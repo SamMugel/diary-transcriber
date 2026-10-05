@@ -118,3 +118,33 @@ Legend: ✅ **Accepted** · 🟡 **Pending** · ⛫ **Superseded**
   older macOS 14 users unsupported until a back-port strategy is agreed; track
   the trade-off in AGENTS.md's platform baseline.
 - **Supersedes:** — (refines D-0007, D-0010 platform-baseline wording)
+
+## D-0014 — ATS exception for api.openai.com (PRD 40)
+- **Date:** 2026-10-05 · **Status:** 🟡 Pending (accepted as implemented; risk
+  flagged for follow-up)
+- **Decision:** `NSAppTransportSecurity` in `Resources/Info.plist` sets
+  `NSAllowsArbitraryLoads=false` and scopes an exception to `api.openai.com`
+  only, pinning `NSExceptionRequiresForwardSecrecy=true` and
+  `NSExceptionMinimumTLSVersion="TLSv1.2"`. `WhisperClient.classifyURLError`
+  maps transport (`notConnectedToInternet`, `cannotFindHost`,
+  `cannotConnectToHost`, `networkConnectionLost`, `dnsLookupFailed`,
+  `dataNotAllowed`) and TLS (`secureConnectionFailed`,
+  `serverCertificateUntrusted`, `serverCertificateHasBadDate`,
+  `serverCertificateNotYetValid`) `URLError.Code`s to
+  `TranscriptionError.networkUnavailable`, whose `errorDescription` reads
+  `"Network unavailable: transcription failed"`. The failure surfaces via the
+  PRD #25 error banner in `ListViewModel.finishRecording` (entry still
+  persisted; audio never lost).
+- **Rationale:** PRD 40 (ATS Handling Audit) requires that ATS be minimal and
+  TLS-rejected connections surface as a user-visible error rather than a silent
+  hang. OpenAI's Whisper endpoint speaks TLS 1.2+ with forward secrecy, so the
+  exception is safe under current OpenAI config.
+- **Risk:** OpenAI may rotate endpoints, IP ranges, or certificate authorities
+  without notice. If the exception domain becomes stale or the TLS pin rejects a
+  rotation, Whisper requests fail as TLS-rejected errors. The
+  `classifyURLError` mapping flags these as `networkUnavailable` so the user
+  sees the failure, but the exception itself must be updated if OpenAI
+  introduces additional API hostnames. Track via the PRD #40 ATS audit; re-run
+  `ATSHandlingAuditTests.testATS_isScopedToOpenAIDomain` when OpenAI announces
+  endpoint changes.
+- **Supersedes:** —

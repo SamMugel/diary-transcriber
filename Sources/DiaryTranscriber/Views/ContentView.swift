@@ -123,7 +123,11 @@ public final class ListViewModel {
     //     created, so it's also where setTranscript is called. stop() runs the transcription
     //     pipeline and exposes the Transcript via onCompleted; it does NOT call setTranscript
     //     itself (the entry doesn't exist in the manifest yet at that point).
-    public func finishRecording(entry: DiaryEntry, transcript: Transcript? = nil) async {
+    public func finishRecording(
+        entry: DiaryEntry,
+        transcript: Transcript? = nil,
+        transcriptionFailureMessage: String? = nil
+    ) async {
         showRecordingSheet = false
         isRecording = false
 
@@ -178,8 +182,22 @@ public final class ListViewModel {
             }
 
             // AI: PRD #25 — success: clear any prior error banner + retry state.
-            errorBanner = nil
+            //     PRD #40 — persistence succeeded, BUT if the post-recording transcription
+            //     pipeline failed (network/TLS), surface that failure on the error banner
+            //     so the user sees "Network unavailable: transcription failed" rather than
+            //     a silent empty-transcript entry. Audio + entry row are already on disk
+            //     (audio is never lost) and the .none-source row is later eligible for the
+            //     Re-transcribe button (PRD #26), so lastFailedFinish stays nil — there is
+            //     nothing the Retry button could usefully re-attempt, since the audio is
+            //     already in the store and the transcription failure happened upstream in
+            //     RecordingViewModel.stop().
+            //     ref: PRD 40-ats-handling-audit (requirement 3, acceptance criterion 1)
             lastFailedFinish = nil
+            if let failure = transcriptionFailureMessage, !failure.isEmpty {
+                errorBanner = failure
+            } else {
+                errorBanner = nil
+            }
 
             await refresh()
         } catch {
@@ -391,9 +409,13 @@ public struct ContentView: View {
                 viewModel: RecordingViewModel(
                     transcriptionService: env.transcriptionService
                 ),
-                onCompleted: { entry, transcript in
+                onCompleted: { entry, transcript, failureMessage in
                     Task {
-                        await viewModel.finishRecording(entry: entry, transcript: transcript)
+                        await viewModel.finishRecording(
+                            entry: entry,
+                            transcript: transcript,
+                            transcriptionFailureMessage: failureMessage
+                        )
                     }
                 },
                 onCancel: {

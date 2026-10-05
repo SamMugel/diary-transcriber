@@ -17,16 +17,20 @@ public struct RecordingView: View {
     /// transcription yielded no final transcript, e.g. failure or no service wired).
     /// The caller (e.g., ListViewModel via `finishRecording`) copies the audio + transcript
     /// into the store folder and persists both via `append` then `setTranscript`.
-    // AI: PRD #18 — `onCompleted` now carries the Transcript so `finishRecording` can call
-    //     `store.setTranscript` AFTER `store.append` creates the manifest row (setTranscript
-    //     requires the row to exist — `stop()` cannot call it directly because the manifest
-    //     entry is only created downstream in `finishRecording`).
-    private var onCompleted: ((DiaryEntry, Transcript?) -> Void)?
+    //
+    // AI: PRD #40 — `transcriptionFailureMessage` carries a human-readable message when the
+    //     post-recording transcription pipeline failed (e.g. networkUnavailable). It's passed
+    //     alongside entry/transcript so finishRecording can surface it through the
+    //     ListViewModel.errorBanner pathway (defined by PRD #25) — the entry + audio are
+    //     still persisted (audio is never lost), but the user sees the failure reason
+    //     rather than a silent empty transcript.
+    //     ref: PRD 40-ats-handling-audit (requirement 3)
+    private var onCompleted: ((DiaryEntry, Transcript?, String?) -> Void)?
     private var onCancel: (() -> Void)?
 
     public init(
         viewModel: RecordingViewModel = RecordingViewModel(),
-        onCompleted: ((DiaryEntry, Transcript?) -> Void)? = nil,
+        onCompleted: ((DiaryEntry, Transcript?, String?) -> Void)? = nil,
         onCancel: (() -> Void)? = nil
     ) {
         self._viewModel = State(initialValue: viewModel)
@@ -65,8 +69,19 @@ public struct RecordingView: View {
             // which happens after stop() completes. The matching Transcript (if any)
             // is propagated to `onCompleted` so the downstream `finishRecording` can
             // persist it via `store.setTranscript` after `store.append`.
+            //
+            // AI: PRD #40 — when the post-recording transcription pipeline failed (e.g.
+            //     networkUnavailable), completedEntry is still set (audio is never lost)
+            //     but completedTranscript is nil and transcriptionError carries the
+            //     failure reason. We forward it on completion so `finishRecording` can
+            //     surface it through `ListViewModel.errorBanner` instead of letting the
+            //     sheet auto-dismiss into a silent empty-transcript state.
+            //     ref: PRD 40-ats-handling-audit (requirement 3)
             if let entry = newValue {
-                onCompleted?(entry, viewModel.completedTranscript)
+                let errorToForward = viewModel.transcriptionError.isEmpty
+                    ? nil
+                    : viewModel.transcriptionError
+                onCompleted?(entry, viewModel.completedTranscript, errorToForward)
                 dismiss()
             }
         }
