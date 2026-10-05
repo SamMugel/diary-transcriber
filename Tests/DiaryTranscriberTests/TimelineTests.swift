@@ -484,4 +484,70 @@ final class TimelineTests: XCTestCase {
             "Deleted entry should be evicted from the preview cache on refresh"
         )
     }
+
+    // MARK: - PRD #34 — ListViewModel Init Task Lifecycle
+
+    // AI: PRD #34 — Verify that constructing a ListViewModel no longer fires a
+    //     detached refresh task. Previously `init` called `Task { await refresh() }`
+    //     which populated `entries` asynchronously after construction. After the
+    //     fix, `entries` stays empty until an explicit `refresh()` call (which is
+    //     now driven by `ContentView.body`'s `.task` modifier). This guards against
+    //     a regression where the detached task is reintroduced.
+    @MainActor
+    func testListViewModel_init_doesNotAutoRefresh() async throws {
+        let tempDir = FileManager.default.temporaryDirectory
+            .appending(path: "init-task-test-\(UUID().uuidString)")
+        let store = DiaryStore(folder: tempDir)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+
+        let entry = DiaryEntry(
+            startedAt: Date(),
+            durationSeconds: 30,
+            audioPath: "init.m4a",
+            transcriptPath: "init.md",
+            source: .none
+        )
+        try await store.append(entry: entry)
+
+        // Construct the view-model but do NOT call refresh(). If init still
+        // kicked off a detached task, the entry could appear here. Yield once
+        // to give any possible detached task a chance to run.
+        let vm = ListViewModel(store: store)
+        await Task.yield()
+
+        XCTAssertEqual(
+            vm.entries.count, 0,
+            "init must not auto-refresh; entries should remain empty until an explicit refresh"
+        )
+    }
+
+    // AI: PRD #34 — Verify the timeline populates when refresh() is invoked from
+    //     the view's `.task` scope (the direct equivalent of what ContentView's
+    //     `.task { await viewModel.refresh() }` does on appear). This confirms the
+    //     initial-refresh behavior is preserved end-to-end.
+    @MainActor
+    func testListViewModel_initialRefreshPopulatesTimeline() async throws {
+        let tempDir = FileManager.default.temporaryDirectory
+            .appending(path: "init-task-populate-\(UUID().uuidString)")
+        let store = DiaryStore(folder: tempDir)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+
+        let entry = DiaryEntry(
+            startedAt: Date(),
+            durationSeconds: 30,
+            audioPath: "populate.m4a",
+            transcriptPath: "populate.md",
+            source: .none
+        )
+        try await store.append(entry: entry)
+
+        let vm = ListViewModel(store: store)
+        XCTAssertEqual(vm.entries.count, 0, "Before refresh, entries should be empty")
+
+        // Simulate what ContentView's `.task` does on appear.
+        await vm.refresh()
+
+        XCTAssertEqual(vm.entries.count, 1, "After refresh, the timeline should be populated")
+        XCTAssertEqual(vm.entries[0].id, entry.id)
+    }
 }

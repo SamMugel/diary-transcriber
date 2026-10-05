@@ -47,7 +47,11 @@ public final class ListViewModel {
     public init(store: DiaryStore? = nil, transcriptionService: TranscriptionService? = nil) {
         self.store = store
         self.transcriptionService = transcriptionService
-        Task { await refresh() }
+        // AI: PRD #34 — initial refresh is kicked off by ContentView.body via
+        //     `.task { await viewModel.refresh() }` so SwiftUI owns the lifecycle
+        //     and auto-cancels on disappear. Previously a discarded `Task { await
+        //     refresh() }` here would outlive the view-model if the view was
+        //     destroyed during init (ISSUE-017).
     }
 
     public func refresh() async {
@@ -426,6 +430,15 @@ public struct ContentView: View {
         .sheet(isPresented: $showSettings) {
             SettingsView(viewModel: env.settings)
                 .frame(minWidth: 460)
+        }
+        .task {
+            // AI: PRD #34 — drive the initial refresh from a view-owned scope so
+            //     SwiftUI cancels it automatically when ContentView disappears.
+            //     Previously `ListViewModel.init` discarded a `Task` that could
+            //     outlive the view-model (ISSUE-017). This `.task` is started when
+            //     the view appears and cancelled when it goes away, guaranteeing
+            //     @MainActor state is only touched from a visible view-model.
+            await viewModel.refresh()
         }
     }
 
