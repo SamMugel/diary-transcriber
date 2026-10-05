@@ -2,7 +2,7 @@
   "title": "Finish-Recording Error Feedback",
   "priority": 2,
   "depends": ["content-view"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Add user-facing error state to ListViewModel: a non-fatal errorBanner: String? label",
     "Wrap moveItem and store.append calls in finishRecording with do/catch that catches the specific Error; on failure set errorBanner to \"Audio saved to ~/Documents, entry could not be saved: <errorDescription>\" — never swallow with a bare catch",
