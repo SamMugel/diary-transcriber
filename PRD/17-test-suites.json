@@ -2,7 +2,7 @@
   "title": "Test Suites",
   "priority": 7,
   "depends": ["diary-store", "speech-transcriber", "transcription-service"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Write DiaryStoreTests covering append, entries sorting, update, delete, and concurrent write safety",
     "Write SpeechTranscriberTests covering success path, empty result, and unavailable recognizer",
