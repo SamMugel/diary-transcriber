@@ -2,7 +2,7 @@
   "title": "API Key Input Binding",
   "priority": 2,
   "depends": ["settings-view"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Add a local @State var apiKeyInput: String to SettingsView to buffer the field text; the SecureField binds to apiKeyInput, not to the Keychain-backed getter",
     "Commit apiKeyInput to Keychain only on .onSubmit, .onDisappear, or via an explicit Save button — never on every keystroke",

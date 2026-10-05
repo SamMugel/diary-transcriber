@@ -2,7 +2,7 @@
   "title": "Strict Concurrency Explicit Flag",
   "priority": 4,
   "depends": ["project-setup"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Pin strict concurrency explicitly in Package.swift: add an inline comment next to .swiftLanguageMode(.v6) confirming it enforces strict concurrency, or add .unsafeFlags([\"-strict-concurrency=complete\"]) if .v6 alone is insufficient for an older toolchain; document the choice in specs/decisions.md"
   ],

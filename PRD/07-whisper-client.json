@@ -2,7 +2,7 @@
   "title": "Whisper Client",
   "priority": 4,
   "depends": ["core-models"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Implement WhisperClient actor with init(apiKey: String) and transcribe(at:) returning Transcript",
     "POST to https://api.openai.com/v1/audio/transcriptions with model whisper-1 via URLSession (120s timeout, HTTPS only)",

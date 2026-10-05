@@ -2,7 +2,7 @@
   "title": "Recording Output Delegate Deadlock Fix",
   "priority": 1,
   "depends": ["audio-recorder"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Replace the continuation: CheckedContinuation<Void, Never>? and captureError: Error? mutable fields in RecordingOutputDelegate with state behind a Mutex<DelegateState> (Swift 6.0 synchronization); remove the @unchecked Sendable annotation",
     "Robust to delivery order via pre-resume: when didFinishRecordingTo fires, store the result in Mutex state immediately; if it fires before waitForCompletion installs the continuation, the next waitForCompletion resumes immediately from stored state without awaiting a continuation nobody will resume",

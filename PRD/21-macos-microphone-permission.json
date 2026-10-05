@@ -2,7 +2,7 @@
   "title": "macOS Microphone Permission Flow",
   "priority": 1,
   "depends": ["permission-manager", "audio-recorder"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Wrap AVCaptureDevice.requestAccess(for:) in withCheckedThrowingContinuation with a 5-second timeout — on timeout resume throwing RecorderError.permissionTimeout, never hang",
     "When authorizationStatus is .denied, throw RecorderError.permissionDenied; when .notDetermined and no callback fires within the timeout, throw permissionDenied with the same recovery guidance rather than hanging",

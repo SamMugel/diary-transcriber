@@ -2,7 +2,7 @@
   "title": "Content View",
   "priority": 3,
   "depends": ["diary-store"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Implement ContentView with WindowGroup 900×660 default, 720×540 minimum",
     "Toolbar with New Entry primary button (calls VM startRecording(); becomes Cancel during recording) and Settings secondary button",

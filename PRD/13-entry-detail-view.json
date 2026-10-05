@@ -2,7 +2,7 @@
   "title": "Entry Detail View",
   "priority": 6,
   "depends": ["audio-player", "diary-store"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Implement EntryDetailView with scrollable full transcript via TextEditor",
     "Display audio playback controls: play/pause, scrubber, timecode via AudioPlayer",

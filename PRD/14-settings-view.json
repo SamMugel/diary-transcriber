@@ -2,7 +2,7 @@
   "title": "Settings View",
   "priority": 6,
   "depends": [],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Implement SettingsView as Sheet from toolbar",
     "General section: output folder via NSOpenPanel, default mic via Picker",

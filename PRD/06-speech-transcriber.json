@@ -2,7 +2,7 @@
   "title": "Speech Transcriber",
   "priority": 4,
   "depends": ["core-models"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Implement SpeechTranscriber actor with transcribe(at audioURL: URL) async throws -> Transcript using SFSpeechRecognizer + SFSpeechURLRecognitionRequest",
     "Ensure only one SFSpeechRecognizer instance exists at a time",

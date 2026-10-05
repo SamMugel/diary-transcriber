@@ -2,7 +2,7 @@
   "title": "Diary Store",
   "priority": 2,
   "depends": ["core-models"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Implement DiaryStore actor with init(folder: URL) creating manifest.json (schemaVersion 1, folder, entries []) if absent",
     "Implement entries() returning [DiaryEntry] sorted newest-first by startedAt",

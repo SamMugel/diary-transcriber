@@ -2,7 +2,7 @@
   "title": "Transcription Service",
   "priority": 5,
   "depends": ["speech-transcriber", "whisper-client"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Implement TranscriptionService as actor",
     "transcribe(at audioURL: URL) returns AsyncStream<TranscriptUpdate>",

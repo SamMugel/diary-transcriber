@@ -2,7 +2,7 @@
   "title": "AudioRecorder Stop Error Handling",
   "priority": 1,
   "depends": ["audio-recorder"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Change AudioRecorder.stop() to throw RecorderError.notRecording (LocalizedError) when no recording is active — remove the URL(fileURLWithPath: \"\") sentinel return",
     "RecordingViewModel.stop() must call recorder.stop() in try/catch; on RecorderError.notRecording it returns early without emitting completedEntry and resets to the not-recording UI state"

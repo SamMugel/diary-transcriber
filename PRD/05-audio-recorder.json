@@ -2,7 +2,7 @@
   "title": "Audio Recorder",
   "priority": 3,
   "depends": ["permission-manager"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Implement AudioRecorder as actor",
     "start() validates mic permission, configures AVCaptureSession with single audio input, adds AVCaptureAudioFileOutput set to .m4a, creates parent directory, calls session.startRunning() and output.startRecording(to: url)",

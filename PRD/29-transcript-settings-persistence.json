@@ -2,7 +2,7 @@
   "title": "Transcript Settings Persistence",
   "priority": 2,
   "depends": ["settings-view"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Persist TranscriptSettings (useOnDeviceSpeech, useWhisperFallback) to UserDefaults using a dedicated prefix key (e.g. \"transcription.useOnDeviceSpeech\")",
     "SettingsViewModel.transcriptionSettings initializer reads from UserDefaults, falling back to defaults; defaults match the prior struct initializer defaults",
