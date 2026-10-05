@@ -1,5 +1,27 @@
+import Foundation
+import Synchronization
 import XCTest
 @testable import DiaryTranscriberCore
+
+// AI: A Mutex-backed, Sendable collection box used by SpeechTranscriberTests to collect
+//     stream results without tripping strict-concurrency "sending value of non-Sendable
+//     type" errors. The closure captures this value and appends from within the Task,
+//     then the test reads it after cancellation — both accesses go through the Mutex.
+private final class CollectBox: Sendable {
+    private let mutex = Mutex([String]())
+
+    func append(_ text: String) {
+        mutex.withLock { values in
+            values.append(text)
+        }
+    }
+
+    var isEmpty: Bool {
+        mutex.withLock { values in
+            values.isEmpty
+        }
+    }
+}
 
 final class SpeechTranscriberTests: XCTestCase {
 
@@ -73,18 +95,23 @@ final class SpeechTranscriberTests: XCTestCase {
         let transcriber = SpeechTranscriber()
         let stream = await transcriber.liveStream()
 
-        var collected: [String] = []
-        for await text in stream {
-            collected.append(text)
+        let collected = CollectBox()
+        let collectTask = Task {
+            for await text in stream {
+                collected.append(text)
+            }
         }
 
-        // AI: In CI without a live microphone or on-device recognizer, the stream
-        //     finalizes right away and produces no partial results. On a real
-        //     device with microphone access this would be non-empty, but we can
-        //     only assert the negative case from the test environment.
+        // AI: On headless CI without a recognizer, the stream finishes immediately and
+        //     collected stays empty. On a device with an active recognizer but no audio
+        //     being fed, the recognition task never produces results — give it a moment
+        //     to confirm and then cancel to avoid hanging the test.
+        try? await Task.sleep(for: .seconds(2))
+        collectTask.cancel()
+
         XCTAssertTrue(
             collected.isEmpty,
-            "liveStream should yield no results when Speech is unavailable in tests"
+            "liveStream should yield no results when Speech is unavailable or no audio is provided"
         )
     }
 
@@ -102,13 +129,11 @@ final class SpeechTranscriberTests: XCTestCase {
         }
         task.cancel()
 
-        // AI: Should not throw on cancellation. We don't assert on collected values
-        //     because the device may lack an on-device recognizer; that case is
-        //     covered by testLiveStream_returnsEmptyStreamWhenSpeechUnavailable.
-        do {
-            try await task.value
-        } catch {
-            XCTFail("Cancelling liveStream should not throw: \(error)")
-        }
+        // AI: Should not throw or hang on cancellation. Task<Void, Never> does not
+        //     throw on cancellation, so we just await its completion. We don't
+        //     assert on collected values because the device may have an on-device
+        //     recognizer; that case is covered by
+        //     testLiveStream_returnsEmptyStreamWhenSpeechUnavailable.
+        await task.value
     }
 }
