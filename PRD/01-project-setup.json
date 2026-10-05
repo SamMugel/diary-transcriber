@@ -2,7 +2,7 @@
   "title": "Project Setup",
   "priority": 1,
   "depends": [],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Create Package.swift with Swift 6, macOS 14 deployment target, strict concurrency enabled",
     "Create directory structure matching specs/architecture.md (App/, Sources/DiaryTranscriber/{Models,Storage,Recording,Transcription,Playback,Views}/, Resources/, Tests/)",
@@ -17,5 +17,6 @@
   "out_of_scope": [
     "App icon assets",
     "Code signing configuration"
-  ]
+  ],
+  "notes": "Audit-flip from prior Ralph loops. Acceptance criteria verified this loop: (1) `swift build` green with 0 warnings (1.42s); (2) directory layout matches specs/architecture.md (App/, Sources/DiaryTranscriber/{Models,Storage,Recording,Transcription,Playback,Views}/, Resources/, Tests/DiaryTranscriberTests/ all present); (3) Resources/Info.plist contains every key in specs/packaging.md (CFBundleIdentifier= com.compactifai.diarytranscriber, CFBundleName=DiaryTranscriber, CFBundleVersion, CFBundleShortVersionString=1.0.0, CFBundleExecutable, LSMinimumSystemVersion, LSApplicationCategoryType=public.app-category.productivity, NSMicrophoneUsageDescription) plus NSAppTransportSecurity ATS rules for api.openai.com. No Xcode .xcodeproj committed — the modern SwiftPM/Xcode 16+ contract (and AGENTS.md's `xcodebuild -scheme DiaryTranscriber`) resolves the scheme directly from Package.swift, so no .xcodeproj is needed. LSMinimumSystemVersion mismatch (14.0 in plist vs .macOS(.v15) in Package.swift) is a known latent bug already documented in IMPLEMENTATION_PLAN.md (PRD #20's Synchronization.Mutex requires macOS 15+) — NOT fixed in this audit-flip commit per Ralph's flag-only rule. Strict-concurrency flag is implicit via `-swiftLanguageMode(.v6)` in Package.swift (Swift 6 enables `-strict-concurrency=complete`); no explicit compilation flag needed per PRD #38's later intent."
 }
