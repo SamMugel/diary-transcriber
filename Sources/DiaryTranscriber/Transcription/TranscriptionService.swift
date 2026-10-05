@@ -8,16 +8,21 @@ import Foundation
 
 public actor TranscriptionService: TranscriptionServiceProtocol {
 
-    private let speechTranscriber: SpeechTranscriber
+    private let speechTranscriber: SpeechTranscriberProtocol
     // AI: `var` so replaceWhisperClient(_) can rebuild the client after a Settings API-key commit,
     //     reloading the Whisper fallback without restarting the app or recreating the Speech engine
     //     (which carries no state and is expensive to spin up). PRD #28 criterion 2 / ref: PRD 28
-    private var whisperClient: WhisperClient?
+    // AI: PRD #36 — protocol-typed so TranscriptionServiceTests can inject a controllable
+    //     mock that returns a deterministic Transcript (or throws) without issuing a real
+    //     URLSession POST to api.openai.com, mirroring the seam proven by AudioRecorderProtocol
+    //     (PRD #35). Production callers continue to construct `WhisperClient(apiKey:)` and the
+    //     assignment upcasts it to `WhisperClientProtocol?` implicitly.
+    private var whisperClient: WhisperClientProtocol?
     private let settings: TranscriptSettings
 
     public init(
-        speechTranscriber: SpeechTranscriber = SpeechTranscriber(),
-        whisperClient: WhisperClient? = nil,
+        speechTranscriber: SpeechTranscriberProtocol = SpeechTranscriber(),
+        whisperClient: WhisperClientProtocol? = nil,
         settings: TranscriptSettings = TranscriptSettings()
     ) {
         self.speechTranscriber = speechTranscriber
@@ -35,7 +40,12 @@ public actor TranscriptionService: TranscriptionServiceProtocol {
     //         view-models keep a stable `let service` reference and the stateless
     //         SpeechTranscriber is not needlessly recreated.
     //   ref:  PRD 28-transcription-service-bootstrap, acceptance criterion 2
-    public func replaceWhisperClient(_ client: WhisperClient?) async {
+    // AI: PRD #36 — parameter widened to `WhisperClientProtocol?` so the
+    //     TranscriptionServiceProtocol contract accepts a controllable mock for
+    //     TranscriptionServiceTests. Concrete `WhisperClient` instances continue to
+    //     pass through (upcast to the wider protocol type).
+    //   ref:  PRD 36-transcription-service-tests
+    public func replaceWhisperClient(_ client: WhisperClientProtocol?) async {
         whisperClient = client
     }
 

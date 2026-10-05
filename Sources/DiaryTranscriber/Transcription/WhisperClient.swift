@@ -6,7 +6,7 @@ import Foundation
 //         Speech fails or produces low-quality output; requires an API key and network
 //   ref:  specs/transcription.md WhisperClient API, D-0004
 
-public actor WhisperClient {
+public actor WhisperClient: WhisperClientProtocol {
 
     private let apiKey: String
     private let endpoint = URL(string: "https://api.openai.com/v1/audio/transcriptions")!

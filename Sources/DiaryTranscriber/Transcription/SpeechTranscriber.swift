@@ -10,7 +10,7 @@ import Speech
 //         WhisperClient is the fallback when Speech fails or underperforms
 //   ref:  specs/transcription.md SpeechTranscriber API, D-0004
 
-public actor SpeechTranscriber {
+public actor SpeechTranscriber: SpeechTranscriberProtocol {
 
     private var recognizer: SFSpeechRecognizer?
 

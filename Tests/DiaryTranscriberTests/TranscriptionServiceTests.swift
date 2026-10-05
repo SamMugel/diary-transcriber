@@ -267,4 +267,395 @@ final class TranscriptionServiceTests: XCTestCase {
             "Body with a Speech error and no Whisper fallback should still emit at least one update (failed or partial)"
         )
     }
+
+    // MARK: - Engine-mock tests (PRD #36)
+    //
+    // PRD #36 requires controllable mocks for SpeechTranscriber and WhisperClient so the
+    // fallback-decision branches inside TranscriptionService.runTranscription are exercised
+    // fully without touching SFSpeechRecognizer or the real OpenAI network. The mocks below
+    // conform to SpeechTranscriberProtocol / WhisperClientProtocol (PRD #36's seam) and track
+    // call counts so tests can assert exactly which engine ran and which didn't. The tests
+    // assert: speech-only success, speech-empty → whisper fallback, speech-error → whisper
+    // fallback, speech-disabled → whisper only, and both-failed → .failed with no .final.
+    //
+    // ref: PRD 36-transcription-service-tests acceptance criteria
+
+    // AI:
+    //   what: MockSpeechTranscriber — actor conforming to SpeechTranscriberProtocol for PRD #36
+    //   why:  TranscriptionServiceTests must drive TranscriptionService with a controllable Speech
+    //         engine that either succeeds with a deterministic Transcript (including an empty-text
+    //         Transcript to exercise the empty-result fallback path) or throws, WITHOUT instantiating
+    //         a real SFSpeechRecognizer. The mock tracks `transcribeCallCount` so PRD #36's
+    //         "only Whisper runs" assertion can guard against a regression where Speech runs when
+    //         it should not. `liveStream()` returns a trivially-finished stream — that API is
+    //         unused by the TranscriptionService path under test.
+    //   ref:  PRD 36-transcription-service-tests, SpeechTranscriberProtocol
+    actor MockSpeechTranscriber: SpeechTranscriberProtocol {
+        private let outcome: Outcome
+        private var transcribeCallCount: Int = 0
+
+        enum Outcome {
+            /// `transcribe(at:)` returns the configured Transcript verbatim (contents may include
+            /// empty text, low confidence, etc., exactly as a real pass would deliver).
+            case success(Transcript)
+            /// `transcribe(at:)` throws the configured error.
+            case failure(Error)
+        }
+
+        init(outcome: Outcome) {
+            self.outcome = outcome
+        }
+
+        func transcribe(at audioURL: URL) async throws -> Transcript {
+            transcribeCallCount += 1
+            switch outcome {
+            case .success(let transcript):
+                return transcript
+            case .failure(let error):
+                throw error
+            }
+        }
+
+        func liveStream() async -> AsyncStream<String> {
+            // Unused by TranscriptionService's transcribe(at:) path; return an empty stream.
+            AsyncStream { continuation in continuation.finish() }
+        }
+
+        /// Exposed so PRD #36 tests can assert that Speech ran or did not run.
+        func callCount() async -> Int {
+            transcribeCallCount
+        }
+    }
+
+    // AI:
+    //   what: MockWhisperClient — actor conforming to WhisperClientProtocol for PRD #36
+    //   why:  TranscriptionServiceTests must drive TranscriptionService's Whisper fallback path
+    //         with a controllable client that either succeeds with a deterministic Transcript or
+    //         throws, WITHOUT issuing a real URLSession POST to api.openai.com. The mock tracks
+    //         `transcribeCallCount` so the "Whisper.transcribe is never called" assertion (PRD #36
+    //         testSpeechSucceeds_NoWhisperFallback) can guard against a regression where Speech
+    //         success still falls through to Whisper.
+    //   ref:  PRD 36-transcription-service-tests, WhisperClientProtocol
+    actor MockWhisperClient: WhisperClientProtocol {
+        private let outcome: Outcome
+        private var transcribeCallCount: Int = 0
+
+        enum Outcome {
+            /// `transcribe(at:)` returns the configured Transcript verbatim.
+            case success(Transcript)
+            /// `transcribe(at:)` throws the configured error.
+            case failure(Error)
+        }
+
+        init(outcome: Outcome) {
+            self.outcome = outcome
+        }
+
+        func transcribe(at audioURL: URL) async throws -> Transcript {
+            transcribeCallCount += 1
+            switch outcome {
+            case .success(let transcript):
+                return transcript
+            case .failure(let error):
+                throw error
+            }
+        }
+
+        /// Exposed so PRD #36 tests can assert the exact number of Whisper invocations.
+        func callCount() async -> Int {
+            transcribeCallCount
+        }
+    }
+
+    // AI:
+    //   what: Test fixture audio URL helper
+    //   why:  TranscriptionService.estimateAudioDuration reads the file size to compute hang-
+    //         protection timeout; mocks return synchronously regardless of file existence, but a
+    //         real temp file keeps estimateAudioDuration deterministic (returns a real size → a
+    //         real floor-clamped timeout) rather than relying on its 60s default for a missing
+    //         file. Also matches the production call path where AudioRecorder writes a real .m4a.
+    private func makeTempAudioFile() throws -> URL {
+        let url = FileManager.default.temporaryDirectory
+            .appending(path: "ts-mock-\(UUID().uuidString).m4a")
+        try "mock audio bytes".write(to: url, atomically: true, encoding: .utf8)
+        return url
+    }
+
+    // MARK: - Speech success → no Whisper fallback
+
+    // AI: PRD #36 testSpeechSucceeds_NoWhisperFallback — mock Speech success with a confident,
+    //     non-empty transcript; assert Whisper.transcribe is never called (call-count mock),
+    //     a .final update is emitted, and its source is .speech. Guards against a regression
+    //     where Speech success still falls through to Whisper.
+    @MainActor
+    func testSpeechSucceeds_NoWhisperFallback() async throws {
+        let speechTranscript = Transcript(
+            text: "Good evening, diary entry.",
+            confidence: 0.9,
+            source: .speech,
+            isFinal: true
+        )
+        let speech = MockSpeechTranscriber(outcome: .success(speechTranscript))
+        let whisper = MockWhisperClient(outcome: .success(Transcript(
+            text: "would only see this if Speech fell through",
+            confidence: nil,
+            source: .whisper,
+            isFinal: true
+        )))
+
+        let service = TranscriptionService(
+            speechTranscriber: speech,
+            whisperClient: whisper,
+            settings: TranscriptSettings(useOnDeviceSpeech: true, useWhisperFallback: true)
+        )
+
+        let audioURL = try makeTempAudioFile()
+        defer { try? FileManager.default.removeItem(at: audioURL) }
+
+        var updates: [TranscriptUpdate] = []
+        let stream = await service.transcribe(at: audioURL)
+        for await update in stream { updates.append(update) }
+
+        // AI: Whisper must never be invoked when Speech succeeds with a high-confidence,
+        //     non-empty transcript that exceeds the length-sanity threshold for a real-duration capture.
+        let whisperCalls = await whisper.callCount()
+        XCTAssertEqual(whisperCalls, 0, "Whisper must not run when Speech succeeds")
+
+        let speechCalls = await speech.callCount()
+        XCTAssertEqual(speechCalls, 1, "Speech must run exactly once on the success path")
+
+        let final = updates.first { update in
+            if case .final = update { return true } else { return false }
+        }
+        guard case .final(let transcript) = final else {
+            XCTFail("Expected a .final update on Speech-only success; updates: \(updates)")
+            return
+        }
+        XCTAssertEqual(
+            transcript.source,
+            .speech,
+            "Final source must be .speech on the Speech-only success path"
+        )
+        XCTAssertEqual(
+            transcript.text,
+            speechTranscript.text,
+            "Final transcript text must match the Speech engine's output verbatim"
+        )
+    }
+
+    // MARK: - Speech returns empty → Whisper fallback
+
+    // AI: PRD #36 testWhisperFallback_WhenSpeechReturnsEmpty — mock Speech returning an empty-text
+    //     Transcript (the empty-result fallback trigger in shouldFallbackFromSpeech); assert Whisper
+    //     runs, the final source is .whisper, and the final text matches Whisper's output. Guards
+    //     against a regression where an empty Speech result is persisted as a .final speech transcript
+    //     instead of falling back.
+    @MainActor
+    func testWhisperFallback_WhenSpeechReturnsEmpty() async throws {
+        let speech = MockSpeechTranscriber(outcome: .success(Transcript(
+            text: "",
+            confidence: 0.95,
+            source: .speech,
+            isFinal: true
+        )))
+        let whisperTranscript = Transcript(
+            text: "Whisper recovered the transcript.",
+            confidence: nil,
+            source: .whisper,
+            isFinal: true
+        )
+        let whisper = MockWhisperClient(outcome: .success(whisperTranscript))
+
+        let service = TranscriptionService(
+            speechTranscriber: speech,
+            whisperClient: whisper,
+            settings: TranscriptSettings(useOnDeviceSpeech: true, useWhisperFallback: true)
+        )
+
+        let audioURL = try makeTempAudioFile()
+        defer { try? FileManager.default.removeItem(at: audioURL) }
+
+        var updates: [TranscriptUpdate] = []
+        let stream = await service.transcribe(at: audioURL)
+        for await update in stream { updates.append(update) }
+
+        let whisperCalls = await whisper.callCount()
+        XCTAssertEqual(whisperCalls, 1, "Whisper must run once when Speech returns empty text")
+
+        let final = updates.first { update in
+            if case .final = update { return true } else { return false }
+        }
+        guard case .final(let transcript) = final else {
+            XCTFail("Expected a .final update on the Whisper fallback path; updates: \(updates)")
+            return
+        }
+        XCTAssertEqual(
+            transcript.source,
+            .whisper,
+            "Final source must be .whisper when Speech returned empty text"
+        )
+        XCTAssertEqual(
+            transcript.text,
+            whisperTranscript.text,
+            "Final transcript text must match Whisper's output on the fallback path"
+        )
+    }
+
+    // MARK: - Speech throws → Whisper fallback
+
+    // AI: PRD #36 testWhisperFallback_WhenSpeechFails — mock Speech throwing a TranscriptionError
+    //     (speechError); assert Whisper is invoked, the final source is .whisper, and the final text
+    //     matches Whisper's output. Guards against a regression where a Speech failure short-circuits
+    //     the Whisper fallback or persists a .failed instead of the recovered Whisper transcript.
+    @MainActor
+    func testWhisperFallback_WhenSpeechFails() async throws {
+        let speech = MockSpeechTranscriber(outcome: .failure(
+            TranscriptionError.speechError("simulated recognizer failure")
+        ))
+        let whisperTranscript = Transcript(
+            text: "Whisper took over after Speech failure.",
+            confidence: nil,
+            source: .whisper,
+            isFinal: true
+        )
+        let whisper = MockWhisperClient(outcome: .success(whisperTranscript))
+
+        let service = TranscriptionService(
+            speechTranscriber: speech,
+            whisperClient: whisper,
+            settings: TranscriptSettings(useOnDeviceSpeech: true, useWhisperFallback: true)
+        )
+
+        let audioURL = try makeTempAudioFile()
+        defer { try? FileManager.default.removeItem(at: audioURL) }
+
+        var updates: [TranscriptUpdate] = []
+        let stream = await service.transcribe(at: audioURL)
+        for await update in stream { updates.append(update) }
+
+        let whisperCalls = await whisper.callCount()
+        XCTAssertEqual(whisperCalls, 1, "Whisper must run once when Speech throws")
+
+        let final = updates.first { update in
+            if case .final = update { return true } else { return false }
+        }
+        guard case .final(let transcript) = final else {
+            XCTFail("Expected a .final update on the Speech-failure fallback path; updates: \(updates)")
+            return
+        }
+        XCTAssertEqual(
+            transcript.source,
+            .whisper,
+            "Final source must be .whisper when Speech threw and Whisper recovered"
+        )
+        XCTAssertEqual(
+            transcript.text,
+            whisperTranscript.text,
+            "Final transcript text must match Whisper's output after Speech failure"
+        )
+    }
+
+    // MARK: - Speech disabled → Whisper only
+
+    // AI: PRD #36 testWhisperOnly_WhenSpeechDisabled — set useOnDeviceSpeech=false; assert Speech
+    //     is never called, Whisper runs, and the final source is .whisper. Guards against a
+    //     regression where the Speech branch runs even when the user has disabled on-device speech
+    //     in Settings (privacy-sensitive recordings).
+    @MainActor
+    func testWhisperOnly_WhenSpeechDisabled() async throws {
+        let speech = MockSpeechTranscriber(outcome: .success(Transcript(
+            text: "would only see this if Speech ran while disabled",
+            confidence: 0.9,
+            source: .speech,
+            isFinal: true
+        )))
+        let whisperTranscript = Transcript(
+            text: "Whisper-only transcript.",
+            confidence: nil,
+            source: .whisper,
+            isFinal: true
+        )
+        let whisper = MockWhisperClient(outcome: .success(whisperTranscript))
+
+        let service = TranscriptionService(
+            speechTranscriber: speech,
+            whisperClient: whisper,
+            settings: TranscriptSettings(useOnDeviceSpeech: false, useWhisperFallback: true)
+        )
+
+        let audioURL = try makeTempAudioFile()
+        defer { try? FileManager.default.removeItem(at: audioURL) }
+
+        var updates: [TranscriptUpdate] = []
+        let stream = await service.transcribe(at: audioURL)
+        for await update in stream { updates.append(update) }
+
+        let speechCalls = await speech.callCount()
+        XCTAssertEqual(speechCalls, 0, "Speech must not run when useOnDeviceSpeech is false")
+
+        let whisperCalls = await whisper.callCount()
+        XCTAssertEqual(whisperCalls, 1, "Whisper must run exactly once when Speech is disabled")
+
+        let final = updates.first { update in
+            if case .final = update { return true } else { return false }
+        }
+        guard case .final(let transcript) = final else {
+            XCTFail("Expected a .final update on the Whisper-only path; updates: \(updates)")
+            return
+        }
+        XCTAssertEqual(
+            transcript.source,
+            .whisper,
+            "Final source must be .whisper when on-device speech is disabled"
+        )
+    }
+
+    // MARK: - Both engines fail → .failed emitted, no .final
+
+    // AI: PRD #36 testBothFailed_FailedUpdateEmitted — mock Speech throwing and Whisper throwing;
+    //     assert a .failed update is emitted, no .final update is emitted, and Whisper was invoked
+    //     (the Speech failure triggered the fallback). Guards against a regression where total
+    //     failure yields an empty stream (silent hang) or a spurious .final.
+    @MainActor
+    func testBothFailed_FailedUpdateEmitted() async throws {
+        let speech = MockSpeechTranscriber(outcome: .failure(
+            TranscriptionError.speechError("simulated recognizer failure")
+        ))
+        let whisper = MockWhisperClient(outcome: .failure(
+            TranscriptionError.whisperError(status: 503)
+        ))
+
+        let service = TranscriptionService(
+            speechTranscriber: speech,
+            whisperClient: whisper,
+            settings: TranscriptSettings(useOnDeviceSpeech: true, useWhisperFallback: true)
+        )
+
+        let audioURL = try makeTempAudioFile()
+        defer { try? FileManager.default.removeItem(at: audioURL) }
+
+        var updates: [TranscriptUpdate] = []
+        let stream = await service.transcribe(at: audioURL)
+        for await update in stream { updates.append(update) }
+
+        let whisperCalls = await whisper.callCount()
+        XCTAssertEqual(whisperCalls, 1, "Whisper must run once when Speech fails (before both fail)")
+
+        let hasFinal = updates.contains { update in
+            if case .final = update { return true } else { return false }
+        }
+        XCTAssertFalse(hasFinal, "Both engines failing must NOT yield a .final update")
+
+        let failedMessage = updates.first { update in
+            if case .failed = update { return true } else { return false }
+        }
+        guard case .failed(let message) = failedMessage else {
+            XCTFail("Expected a .failed update when both engines fail; updates: \(updates)")
+            return
+        }
+        XCTAssertFalse(
+            message.isEmpty,
+            "The .failed message must be non-empty so the user-facing failure stays informative"
+        )
+    }
 }

@@ -23,7 +23,13 @@ public protocol TranscriptionServiceProtocol: Sendable {
 
     /// Hot-swaps the Whisper fallback client in-place. Used by AppEnvironment
     /// when the user commits a new API key in Settings.
-    func replaceWhisperClient(_ client: WhisperClient?) async
+    // AI: PRD #36 — parameter widened to `WhisperClientProtocol?` so tests can
+    //     inject a controllable mock Whisper engine that returns a deterministic
+    //     Transcript (or throws) without issuing a real network request. Concrete
+    //     `WhisperClient` instances continue to pass through (upcast to the wider
+    //     protocol type).
+    //   ref:  PRD 36-transcription-service-tests
+    func replaceWhisperClient(_ client: WhisperClientProtocol?) async
 
     /// Test-only accessor reflecting whether a Whisper client is wired.
     func hasWhisperClient() async -> Bool

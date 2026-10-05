@@ -59,7 +59,7 @@ actor StubTranscriptionService: TranscriptionServiceProtocol {
         }
     }
 
-    func replaceWhisperClient(_ client: WhisperClient?) async {
+    func replaceWhisperClient(_ client: WhisperClientProtocol?) async {
         // No-op: the stub has no Whisper client and never will.
     }
 
