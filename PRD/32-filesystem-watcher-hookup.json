@@ -2,7 +2,7 @@
   "title": "File System Watcher Hookup",
   "priority": 3,
   "depends": ["file-system-watcher", "content-view"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "ListViewModel holds a private FileSystemWatcher initialized with the diary output folder URL",
     "Subscribe to FileSystemWatcher.events: AsyncStream<URL> in ListViewModel via a stored Task; on each debounced emission call await refresh()",
