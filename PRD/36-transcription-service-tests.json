@@ -2,7 +2,7 @@
   "title": "Transcription Service Tests",
   "priority": 3,
   "depends": ["test-suites"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Add controllable mocks for SpeechTranscriber and WhisperClient via protocol injection (or @testable internal types) — not real SFSpeechRecognizer / URLSession",
     "testSpeechSucceeds_NoWhisperFallback: mock Speech success and assert Whisper.transcribe is never called (call-count mock); final source == .speech",
