@@ -22,6 +22,8 @@
     <string>public.app-category.productivity</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>Diary Transcriber records your voice to create diary entries.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>Diary Transcriber uses speech recognition to transcribe your diary entries into text.</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon.icns</string>
     <key>CFBundleIconName</key>

@@ -1,7 +1,8 @@
 import XCTest
 
-/// Validates packaging artifacts required by PRD #16:
+/// Validates packaging artifacts required by PRD #16 and PRD #39:
 /// - Info.plist contains all keys mandated by specs/packaging.md
+/// - Info.plist contains the speech-recognition privacy key (PRD #39)
 /// - AppIcon.icns exists and is a valid macOS icon file
 /// - AppIcon-1024.png exists with correct dimensions
 ///
@@ -46,6 +47,9 @@ final class PackagingTests: XCTestCase {
             ("NSMicrophoneUsageDescription",
              "Diary Transcriber records your voice to create diary entries.",
              "microphone usage description"),
+            ("NSSpeechRecognitionUsageDescription",
+             "Diary Transcriber uses speech recognition to transcribe your diary entries into text.",
+             "speech-recognition usage description (PRD #39)"),
             ("CFBundleIconFile", "AppIcon.icns", "icon file reference"),
             ("CFBundleIconName", "AppIcon", "icon name reference"),
         ]
