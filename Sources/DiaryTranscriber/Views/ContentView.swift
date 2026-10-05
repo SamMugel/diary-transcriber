@@ -654,21 +654,46 @@ public struct EntryRow: View {
 
     @ViewBuilder
     private var sourceBadge: some View {
-        switch entry.source {
-        case .speech:
-            Label("Speech", systemImage: "waveform")
-                .font(.caption)
-                .foregroundStyle(.blue)
-        case .whisper:
-            Label("Whisper", systemImage: "brain")
-                .font(.caption)
-                .foregroundStyle(.purple)
-        case .none:
-            Label("Pending", systemImage: "hourglass")
-                .font(.caption)
-                .foregroundStyle(.orange)
+        Label(EntryRow.sourceBadgeLabel(for: entry.source), systemImage: EntryRow.sourceBadgeIcon(for: entry.source))
+            .font(.caption)
+            .foregroundStyle(EntryRow.sourceBadgeTint(for: entry.source))
+    }
+
+    // AI: PRD #15 — badge label/colors are pure functions of TranscriptSource so the
+    //     acceptance criterion "Source badge displays correct label for each
+    //     TranscriptSource" can be verified without rendering SwiftUI (no ViewInspector
+    //     dependency). The views forward to these; the unit test asserts the strings.
+    static func sourceBadgeLabel(for source: TranscriptSource) -> String {
+        switch source {
+        case .speech:  return "Speech"
+        case .whisper: return "Whisper"
+        case .none:    return "Pending"
         }
     }
+
+    static func sourceBadgeIcon(for source: TranscriptSource) -> String {
+        switch source {
+        case .speech:  return "waveform"
+        case .whisper: return "brain"
+        case .none:    return "hourglass"
+        }
+    }
+
+    static func sourceBadgeTint(for source: TranscriptSource) -> Color {
+        switch source {
+        case .speech:  return .blue
+        case .whisper: return .purple
+        case .none:    return .orange
+        }
+    }
+
+    /// Visible excerpt string for this row. Public so the acceptance test can assert
+    /// the one-line excerpt surface without inspecting the SwiftUI hierarchy.
+    var displayedExcerpt: String { preview }
+
+    /// Visible duration string (e.g. "1:05") computed from `entry.durationSeconds`.
+    /// Public so the acceptance test can assert the formatted value.
+    var displayedDuration: String { formattedDuration }
 
     private var formattedDuration: String {
         let minutes = Int(entry.durationSeconds) / 60
@@ -676,10 +701,8 @@ public struct EntryRow: View {
         return "\(minutes):\(String(format: "%02d", seconds))"
     }
 
-    /// One-line transcript excerpt delivered by the list view-model (PRD #27).
-    /// The value is cached in `ListViewModel.previewExcerpts` to avoid re-reading
-    /// the transcript `.md` on every redraw; here we only render what was already
-    /// loaded.
+    // AI: PRD #15 — `excerpt` kept as a thin alias so the body reads cleanly; the
+    //     real testable surface is `displayedExcerpt` above.
     private var excerpt: String {
         preview
     }

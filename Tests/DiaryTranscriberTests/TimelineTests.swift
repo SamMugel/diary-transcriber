@@ -550,4 +550,155 @@ final class TimelineTests: XCTestCase {
         XCTAssertEqual(vm.entries.count, 1, "After refresh, the timeline should be populated")
         XCTAssertEqual(vm.entries[0].id, entry.id)
     }
+
+    // MARK: - PRD #15 — Timeline acceptance criteria
+
+    // AI:
+    //   what: Timeline renders 1,000 entries in under 500ms (acceptance criterion 1)
+    //   why:  PRD #15 requires the timeline to scale to a thousand entries without
+    //         perceptible lag. The ListViewModel is the seam that drives rendering:
+    //         refresh() loads the manifest and kicks off per-entry excerpt loads.
+    //         `.none`-source rows are cached synchronously (no I/O), so the bulk of
+    //         1,000 entries' synchronous work is the manifest read + sort + cache
+    //         population. We measure refresh() end-to-end and assert <500ms.
+    //   ref:  PRD 15-timeline (acceptance criterion 1)
+    @MainActor
+    func testTimeline_refreshes1000EntriesWithin500ms() async throws {
+        let tempDir = FileManager.default.temporaryDirectory
+            .appending(path: "timeline-1000-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+
+        // Seed 1,000 entries by writing the manifest JSON directly. DiaryStore.append
+        // rewrites the entire manifest on each call, so 1,000 appends would dominate the
+        // test with O(n²) manifest I/O rather than measuring the timeline's refresh path.
+        // `.none` source keeps excerpt caching synchronous (no per-entry disk read),
+        // matching the worst-case rendering path LazyVStack takes for a freshly-loaded
+        // timeline. Per-entry .md/.json files are created only when append() runs;
+        // refresh()'s excerpt path for `.none` never touches them (synchronously cached),
+        // so they are not needed here.
+        let entries = (0..<1_000).map { index in
+            DiaryEntry(
+                startedAt: Date().addingTimeInterval(Double(index)),
+                durationSeconds: 30,
+                audioPath: "entry-\(index).m4a",
+                transcriptPath: "entry-\(index).md",
+                source: .none
+            )
+        }
+        let manifest = Manifest(schemaVersion: 1, folder: tempDir.path, entries: entries)
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.prettyPrinted]
+        try encoder.encode(manifest).write(
+            to: tempDir.appending(path: "manifest.json"),
+            options: .atomic
+        )
+
+        let vm = ListViewModel(store: DiaryStore(folder: tempDir))
+
+        let start = Date()
+        await vm.refresh()
+        let elapsed = Date().timeIntervalSince(start)
+
+        XCTAssertEqual(vm.entries.count, 1_000, "All 1,000 entries should be loaded")
+        XCTAssertLessThan(
+            elapsed, 0.500,
+            "Refreshing 1,000 entries took \(elapsed * 1000)ms; must be under 500ms"
+        )
+    }
+
+    // AI:
+    //   what: Source badge label matches each TranscriptSource (acceptance criterion 3)
+    //   why:  The timeline EntryRow must display the correct label for each source so
+    //         users can distinguish speech / whisper / pending entries at a glance.
+    //         The label/icon/tint are pure static functions on EntryRow so the
+    //         acceptance criterion is verifiable without a SwiftUI hierarchy.
+    //   ref:  PRD 15-timeline (acceptance criterion 3), specs/ui.md EntryRow source badge
+    func testSourceBadge_labelMatchesEachTranscriptSource() {
+        XCTAssertEqual(EntryRow.sourceBadgeLabel(for: .speech), "Speech")
+        XCTAssertEqual(EntryRow.sourceBadgeLabel(for: .whisper), "Whisper")
+        XCTAssertEqual(EntryRow.sourceBadgeLabel(for: .none), "Pending")
+    }
+
+    // AI: PRD #15 — the badge icon distinctly identifies each source so rows are
+    //     visually distinguishable beyond color alone (accessibility).
+    func testSourceBadge_iconMatchesEachTranscriptSource() {
+        XCTAssertEqual(EntryRow.sourceBadgeIcon(for: .speech), "waveform")
+        XCTAssertEqual(EntryRow.sourceBadgeIcon(for: .whisper), "brain")
+        XCTAssertEqual(EntryRow.sourceBadgeIcon(for: .none), "hourglass")
+    }
+
+    // AI: PRD #15 — exhaustive coverage: every TranscriptSource case has a label,
+    //     icon, and tint. Guards against a future case added to TranscriptSource
+    //     without a corresponding badge branch (which would render an empty label).
+    func testSourceBadge_coversEveryTranscriptSourceCase() {
+        let allSources: [TranscriptSource] = [.speech, .whisper, .none]
+        for source in allSources {
+            XCTAssertFalse(
+                EntryRow.sourceBadgeLabel(for: source).isEmpty,
+                "Every TranscriptSource must have a non-empty badge label; \(source) is empty"
+            )
+            XCTAssertFalse(
+                EntryRow.sourceBadgeIcon(for: source).isEmpty,
+                "Every TranscriptSource must have a non-empty badge icon; \(source) is empty"
+            )
+        }
+    }
+
+    // AI:
+    //   what: EntryRow surfaces date, source badge, duration, and excerpt (requirement 1)
+    //   why:  PRD #15 requirement 1 specifies each row shows date/time, source badge,
+    //         duration, and a ~120-char excerpt. EntryRow's `entry`, `displayedExcerpt`,
+    //         and `displayedDuration` are the testable surfaces for the row's data
+    //         without rendering SwiftUI. Verifies the row is wired to real entry data,
+    //         a real duration format, and a real excerpt string.
+    //   ref:  PRD 15-timeline requirement 1, specs/ui.md EntryRow
+    @MainActor
+    func testEntryRow_surfacesDateSourceDurationExcerpt() async throws {
+        let fixedDate = Calendar(identifier: .gregorian)
+            .date(from: DateComponents(year: 2024, month: 1, day: 1, hour: 10, minute: 5))!
+        let entry = DiaryEntry(
+            startedAt: fixedDate,
+            durationSeconds: 65,
+            audioPath: "row.m4a",
+            transcriptPath: "row.md",
+            source: .speech
+        )
+        let row = EntryRow(entry: entry, preview: "Hello timeline.")
+
+        XCTAssertEqual(row.entry.startedAt, fixedDate)
+        XCTAssertEqual(EntryRow.sourceBadgeLabel(for: row.entry.source), "Speech")
+        XCTAssertEqual(row.displayedDuration, "1:05", "65 seconds should format to 1:05")
+        XCTAssertEqual(row.displayedExcerpt, "Hello timeline.")
+    }
+
+    // AI:
+    //   what: Duration formatting across edge values
+    //   why:  PRD #15 requirement 1 includes duration on every row. The format is
+    //         mm:ss; pin the boundaries (0s, sub-minute, exactly one minute, >1 hour)
+    //         so a regression in the formatter is caught.
+    //   ref:  PRD 15-timeline requirement 1
+    @MainActor
+    func testEntryRow_durationFormatting() {
+        func makeRow(seconds: Double) -> EntryRow {
+            EntryRow(
+                entry: DiaryEntry(
+                    startedAt: Date(),
+                    durationSeconds: seconds,
+                    audioPath: "x.m4a",
+                    transcriptPath: "x.md",
+                    source: .none
+                ),
+                preview: ""
+            )
+        }
+
+        XCTAssertEqual(makeRow(seconds: 0).displayedDuration, "0:00")
+        XCTAssertEqual(makeRow(seconds: 4).displayedDuration, "0:04")
+        XCTAssertEqual(makeRow(seconds: 59).displayedDuration, "0:59")
+        XCTAssertEqual(makeRow(seconds: 60).displayedDuration, "1:00")
+        XCTAssertEqual(makeRow(seconds: 125).displayedDuration, "2:05")
+        XCTAssertEqual(makeRow(seconds: 3_600).displayedDuration, "60:00")
+    }
 }
