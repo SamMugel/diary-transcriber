@@ -139,4 +139,51 @@ final class PackagingTests: XCTestCase {
                           "\(name) must be executable (user-executable bit set)")
         }
     }
+
+    // MARK: - package.sh CWD fix (PRD #37)
+
+    /// Regression test for PRD #37: `scripts/package.sh` computes `PROJECT_ROOT`
+    /// but the build previously failed when invoked from another directory
+    /// because `xcodebuild` searches the *current* directory for the workspace.
+    /// The fix adds an explicit `cd "$PROJECT_ROOT"` after the variable is
+    /// computed, wrapped in a fail-fast guard.
+    func testPackageScript_changesToProjectRootBeforeXcodebuild() throws {
+        let scriptURL = projectRoot
+            .appendingPathComponent("scripts/package.sh")
+
+        let source = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        // An explicit `cd "$PROJECT_ROOT"` must appear after PROJECT_ROOT is
+        // computed and before `xcodebuild` is invoked.
+        XCTAssertTrue(source.contains("cd \"$PROJECT_ROOT\""),
+                      "package.sh must cd into $PROJECT_ROOT before invoking xcodebuild")
+
+        // The exit-1 guard must exist so the script fails fast instead of
+        // silently continuing from a wrong working directory.
+        XCTAssertTrue(source.contains("if ! cd \"$PROJECT_ROOT\"; then"),
+                      "package.sh must guard the cd with an if-check")
+        XCTAssertTrue(source.contains("echo \"error: cannot cd to project root: $PROJECT_ROOT\" >&2"),
+                      "package.sh must print a clear error message to stderr if cd fails")
+
+        // The `if ! cd "$PROJECT_ROOT"` guard must appear BEFORE the actual
+        // xcodebuild command (not just any mention of "xcodebuild" in a
+        // comment). Search for the guard and the command form specifically.
+        let cdGuardRange = source.range(of: "if ! cd \"$PROJECT_ROOT\"")
+        let xcodebuildCommandRange = source.range(of: "xcodebuild \\\n  -scheme")
+        switch (cdGuardRange, xcodebuildCommandRange) {
+        case let (cd?, xb?):
+            XCTAssertLessThan(cd.lowerBound, xb.lowerBound,
+                              "`if ! cd \"$PROJECT_ROOT\"` must appear before `xcodebuild`")
+        case (nil, _):
+            XCTFail("package.sh is missing the `if ! cd \"$PROJECT_ROOT\"` guard")
+        case (_, nil):
+            XCTFail("package.sh is missing the `xcodebuild` command invocation")
+        }
+
+        // `set -euo pipefail` (or equivalent fail-fast) must be active so a
+        // failed `cd` actually halts the script even if the explicit guard
+        // were ever removed.
+        XCTAssertTrue(source.contains("set -euo pipefail") || source.contains("set -e"),
+                      "package.sh must run with fail-fast shell options set")
+    }
 }

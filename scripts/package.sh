@@ -7,6 +7,14 @@
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+# Change to the project root so xcodebuild can discover the .xcodeproj/workspace
+# regardless of where this script was invoked from (e.g. `cd /tmp && package.sh`).
+if ! cd "$PROJECT_ROOT"; then
+  echo "error: cannot cd to project root: $PROJECT_ROOT" >&2
+  exit 1
+fi
+
 BUILD_DIR="$PROJECT_ROOT/build/release"
 APP_NAME="DiaryTranscriber"
 APP_PATH="$BUILD_DIR/$APP_NAME.app"
