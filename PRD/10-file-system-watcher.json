@@ -2,7 +2,7 @@
   "title": "File System Watcher",
   "priority": 5,
   "depends": ["diary-store"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Implement FileSystemWatcher observing the Diary output folder",
     "Post insert/update/delete notifications to DiaryStore or consuming view-model",
