@@ -2,7 +2,7 @@
   "title": "Permission Manager",
   "priority": 2,
   "depends": [],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Implement PermissionManager as @MainActor helper",
     "Check AVCaptureDevice.authorizationStatus(for: .audio); if notDetermined, request via AVCaptureDevice.requestAccess(for:) wrapped in withCheckedContinuation",
@@ -16,5 +16,6 @@
   "out_of_scope": [
     "UI for denied state",
     "Deep-link to System Settings"
-  ]
+  ],
+  "notes": "Audit-flip from prior Ralph loops. PermissionManager exists at Sources/DiaryTranscriber/Recording/PermissionManager.swift as `@MainActor enum PermissionManager` with static `checkMicrophonePermission()` that switches over AVCaptureDevice.authorizationStatus(for: .audio): `.authorized` returns true, `.denied`/`.restricted` throws RecorderError.permissionDenied with a System Settings breadcrumb, `@unknown default` throws a defensive variant, and `.notDetermined` delegates to requestMicrophoneAccess() which wraps AVCaptureDevice.requestAccess(for:) in a continuation. All three acceptance criteria verified by inspection. Two implementation choices noted as idiomatic improvements over the literal PRD wording (neither a regression): (1) requestMicrophoneAccess uses `withCheckedThrowingContinuation` instead of `withCheckedContinuation` — the request can fail (user denies prompt) so a throwing continuation is the correct primitive; (2) a 5-second timeout races the permission callback against Task.sleep via withThrowingTaskGroup to prevent indefinite hangs if the system dialog never returns, throwing RecorderError.permissionTimeout. Test coverage: PermissionManagerTests has 5 tests for RecorderError descriptive messages (including permissionTimeout); direct checkMicrophonePermission() is not unit-testable in a headless environment because it triggers the OS permission dialog, but it is exercised indirectly by AudioRecorder.start() integration. Tests pass as part of the 82-test green suite validated this loop. No code changes needed — status-flip only."
 }
