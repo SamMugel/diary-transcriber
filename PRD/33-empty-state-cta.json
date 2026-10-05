@@ -2,7 +2,7 @@
   "title": "Empty State CTA",
   "priority": 3,
   "depends": ["content-view"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Replace the passive \"No entries yet. Click 'New Entry'…\" text in EmptyState with a centered, prominent CTA Button labeled \"New Entry\" styled .borderedProminent that calls the same startRecording() action as the toolbar New Entry primary action — single source of truth for the action"
   ],
