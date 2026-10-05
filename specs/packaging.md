@@ -29,7 +29,7 @@ DiaryTranscriber.app/
 | `CFBundleVersion` | `1` (incremented per build) |
 | `CFBundleShortVersionString` | `1.0.0` |
 | `CFBundleExecutable` | `DiaryTranscriber` |
-| `LSMinimumSystemVersion` | `14.0` |
+| `LSMinimumSystemVersion` | `15.0` |
 | `NSMicrophoneUsageDescription` | `Diary Transcriber records your voice to create diary entries.` |
 | `LSApplicationCategoryType` | `public.app-category.productivity` |
 
@@ -50,7 +50,7 @@ Default output: `DiaryTranscriber-1.0.0.dmg`. Requires signed `.app` first.
 
 - [ ] Bump `CFBundleVersion` and `CFBundleShortVersionString`.
 - [ ] `xcodebuild -scheme DiaryTranscriber -configuration Release build`.
-- [ ] Adhoc-test on a clean macOS 14 VM.
+- [ ] Adhoc-test on a clean macOS 15 VM.
 - [ ] Developer-ID sign.
 - [ ] Notarize.
 - [ ] Staple ticket (`xcrun stapleTicket`).

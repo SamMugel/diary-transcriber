@@ -42,7 +42,6 @@ final class PackagingTests: XCTestCase {
             ("CFBundleName", "DiaryTranscriber", "bundle name"),
             ("CFBundleExecutable", "DiaryTranscriber", "executable name"),
             ("CFBundleShortVersionString", "1.0.0", "marketing version"),
-            ("LSMinimumSystemVersion", "14.0", "minimum OS"),
             ("LSApplicationCategoryType", "public.app-category.productivity", "App Store category"),
             ("NSMicrophoneUsageDescription",
              "Diary Transcriber records your voice to create diary entries.",
@@ -62,6 +61,19 @@ final class PackagingTests: XCTestCase {
             XCTAssertEqual(value, expected,
                            "\(label) (\(key)) should be \(expected)")
         }
+
+        // LSMinimumSystemVersion is asserted separately (not in the exact-string
+        // table above) because we want a numeric floor, not a brittle string
+        // match. PRD 42: Package.swift targets .macOS(.v15) (raised in PRD 20
+        // for Synchronization.Mutex), so the bundle-advertised minimum OS must
+        // agree. Parsing as Double future-proofs against "15.0", "15", or any
+        // future bump to e.g. "16.0" — the assertion is ">= 15.0", not "== 15.0".
+        let minOSString = try XCTUnwrap(plist!["LSMinimumSystemVersion"] as? String,
+                                        "LSMinimumSystemVersion must be present in Info.plist")
+        let minOSVersion = try XCTUnwrap(Double(minOSString),
+                                         "LSMinimumSystemVersion must parse as a Double: \(minOSString)")
+        XCTAssertGreaterThanOrEqual(minOSVersion, 15.0,
+                                    "LSMinimumSystemVersion (\(minOSString)) must be >= 15.0 to match Package.swift's .macOS(.v15) target")
 
         // CFBundleVersion must be present and non-empty (numeric string expected).
         let bundleVersion = try XCTUnwrap(plist!["CFBundleVersion"] as? String,

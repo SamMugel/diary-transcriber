@@ -1,0 +1,23 @@
+{
+  "title": "LSMinimumSystemVersion Alignment",
+  "priority": 4,
+  "depends": ["packaging"],
+  "status": "done",
+  "notes": "PRD 42 — LSMinimumSystemVersion Alignment. Files changed: (1) Resources/Info.plist lines 19-20: <string>14.0</string> → <string>15.0</string>. (2) specs/packaging.md line 32: table row | `LSMinimumSystemVersion` | `14.0` | → | `15.0` |; line 53: 'Adhoc-test on a clean macOS 14 VM' → 'macOS 15 VM'. (3) Tests/DiaryTranscriberTests/PackagingTests.swift: removed the ('LSMinimumSystemVersion', '14.0', 'minimum OS') row from the exact-string mandatoryKeys table (was line 45); added lines 65-76 inside testInfoPlist_containsAllMandatoryKeys — a separate assertion that XCTUnwrap's the value as String, parses it via Double(), and asserts >= 15.0 with a docstring explaining WHY (future-proof numeric floor matching Package.swift's .macOS(.v15), not a brittle exact-string match). Validation: swift build — 0 errors, 0 warnings (0.12s); swift test --filter PackagingTests — 5 passed, 0 failures (0.002s); swift test (full suite) — 158 passed, 0 failures (15.234s). Acceptance criteria verified via plutil -extract LSMinimumSystemVersion (outputs '15.0') and grep '.macOS' Package.swift (.macOS(.v15)) — both agree on macOS 15. No out-of-scope edits (Package.swift, ATS, microphone/speech keys untouched).",
+  "requirements": [
+    "Change LSMinimumSystemVersion in Resources/Info.plist from '14.0' to '15.0' so the bundle-advertised minimum OS matches Package.swift's .macOS(.v15) target (raised in PRD 20 for Synchronization.Mutex)",
+    "Update specs/packaging.md: change the LSMinimumSystemVersion table value from '14.0' to '15.0' (line ~32) and change the release-checklist 'Adhoc-test on a clean macOS 14 VM' to 'macOS 15 VM' (line ~53) so the specification agrees with Resources/Info.plist and Package.swift",
+    "Extend Tests/DiaryTranscriberTests/PackagingTests.testInfoPlist_containsAllMandatoryKeys: remove LSMinimumSystemVersion from the exact-string mandatoryKeys table; add a separate assertion that parses the value as Double and asserts >= 15.0 (future-proof to '15.0' or '15')"
+  ],
+  "acceptance_criteria": [
+    "plutil -p LSMinimumSystemVersion Resources/Info.plist outputs '15.0'",
+    "grep '.macOS' Package.swift and plutil -p LSMinimumSystemVersion Resources/Info.plist agree on macOS 15",
+    "specs/packaging.md's Info.plist table lists LSMinimumSystemVersion as '15.0' and its release checklist references 'macOS 15 VM', not 'macOS 14 VM'",
+    "swift test --filter PackagingTests passes, including an assertion that LSMinimumSystemVersion parses as a Double and is >= 15.0"
+  ],
+  "out_of_scope": [
+    "Adding or modifying other Info.plist keys (NSSpeechRecognitionUsageDescription and NSMicrophoneUsageDescription are owned by PRD 39; ATS exception is owned by PRD 40)",
+    "Changing Package.swift's deployment target",
+    "Runtime gating of macOS-15-only APIs beyond what PRD 20 already delivers"
+  ]
+}

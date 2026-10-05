@@ -1,0 +1,22 @@
+{
+  "title": "README Stale Content Fix",
+  "priority": 4,
+  "depends": ["packaging"],
+  "status": "todo",
+  "requirements": [
+    "Rewrite the ## Status section of README.md to state that the MVP is feature-complete: PRDs 01–40 are implemented, build/test-clean, and that transcription is wired into recording (AppEnvironment constructs TranscriptionService with a WhisperClient from Keychain; finishRecording persists the transcript via DiaryStore.setTranscript)",
+    "Remove from README.md the sentence 'recording works but transcription is never injected/invoked — see the PRD 18 entry point for the current work item' and any pointer to PRD 18 as the active work item",
+    "Update the ## Requirements section of README.md to state 'macOS 15.0 or newer (Sequoia)' instead of 'macOS 14+ (Sonoma or newer)' so it matches Package.swift's .macOS(.v15) target raised in PRD 20 and the accepted decision D-0013"
+  ],
+  "acceptance_criteria": [
+    "README.md's ## Status section contains no claim that contradicts IMPLEMENTATION_PLAN.md (which marks PRDs #18, #19, #26, #28, #36, #37, #38, #39, #40 as done)",
+    "The sentence containing 'transcription is never injected/invoked' is absent from README.md",
+    "README.md's ## Requirements section states 'macOS 15.0 or newer'",
+    "README.md's ## Requirements macOS version agrees with grep '.macOS' Package.swift"
+  ],
+  "out_of_scope": [
+    "Rewriting the Install, Run, Troubleshooting, or Design-decisions sections of README.md (owned by PRD 16 packaging)",
+    "Adding new user-facing documentation outside README.md",
+    "Changing Package.swift's deployment target"
+  ]
+}
