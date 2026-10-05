@@ -2,7 +2,7 @@
   "title": "Info.plist Speech Recognition Key",
   "priority": 4,
   "depends": ["packaging"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Add NSSpeechRecognitionUsageDescription to Resources/Info.plist with the value: \"Diary Transcriber uses speech recognition to transcribe your diary entries into text.\"",
     "Ensure NSMicrophoneUsageDescription remains in the correct bundle path — no regression"
