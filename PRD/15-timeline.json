@@ -2,7 +2,7 @@
   "title": "Timeline",
   "priority": 6,
   "depends": ["diary-store", "file-system-watcher"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Implement entry row: date/time, source badge (speech/whisper/none), duration, one-line excerpt (~120 chars)",
     "Use LazyVStack for rendering; expose rows as semantic buttons",
