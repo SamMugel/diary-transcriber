@@ -85,6 +85,60 @@ final class EntryDetailViewModelTests: XCTestCase {
         XCTAssertEqual(vm.transcriptText, "", "Should load empty transcript from newly created entry")
     }
 
+    // AI:
+    //   what: saveIfChanged persists transcript edits to the .md file via setTranscript (closes ISSUE-015)
+    //   why:  PRD #18 acceptance criterion #2 requires that inline transcript edits in EntryDetailView
+    //         reach the .md file on disk, not just the manifest. The pre-#18 `saveIfChanged` routed
+    //         through `store.update`, which left `.md` empty. This test fails loudly if saveIfChanged
+    //         reverts to the old path.
+    //   ref:  PRD 18-transcription-post-recording-pipeline, ISSUE-015
+    @MainActor
+    func testSaveIfChanged_PersistsTextToMDFile() async throws {
+        let tempDir = FileManager.default.temporaryDirectory
+            .appending(path: "vm-save-md-\(UUID().uuidString)")
+        let store = DiaryStore(folder: tempDir)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+
+        let entry = makeEntry(source: .speech)
+        try await store.append(entry: entry)
+
+        let vm = EntryDetailViewModel(entry: entry, store: store)
+        vm.updateTranscript("Edited transcript text")
+        await vm.saveIfChanged()
+
+        let transcriptURL = tempDir.appending(path: entry.transcriptPath)
+        let text = try String(contentsOf: transcriptURL, encoding: .utf8)
+        XCTAssertEqual(text, "Edited transcript text", "saveIfChanged should persist transcript to .md (ISSUE-015)")
+    }
+
+    // AI:
+    //   what: saveIfChanged on a .none entry preserves .none source (does not invent a source)
+    //   why:  PRD #18 — a failed-transcription (.none source) entry should stay .none after an
+    //         inline user edit; saving shouldn't accidentally upgrade it to .speech/.whisper.
+    //   ref:  PRD 18-transcription-post-recording-pipeline
+    @MainActor
+    func testSaveIfChanged_withSourceNone_keepsSourceNoneOnDisk() async throws {
+        let tempDir = FileManager.default.temporaryDirectory
+            .appending(path: "vm-save-none-\(UUID().uuidString)")
+        let store = DiaryStore(folder: tempDir)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+
+        let entry = makeEntry(source: .none)
+        try await store.append(entry: entry)
+
+        let vm = EntryDetailViewModel(entry: entry, store: store)
+        vm.updateTranscript("User-typed fallback text")
+        await vm.saveIfChanged()
+
+        let entries = try await store.entries()
+        guard let updated = entries.first(where: { $0.id == entry.id }) else {
+            return XCTFail("Entry should still be present after saveIfChanged")
+        }
+        // AI: write TranscriptSource.none explicitly to disambiguate Swift's `.none`
+        //     (which could otherwise resolve to Optional<TranscriptSource>.none).
+        XCTAssertEqual(updated.source, TranscriptSource.none, "source should remain .none after saveIfChanged on an .none entry")
+    }
+
     // MARK: - Helpers
 
     private func makeEntry(source: TranscriptSource) -> DiaryEntry {

@@ -56,6 +56,43 @@ public actor DiaryStore {
         try await writePerEntryMetadata(entry)
     }
 
+    /// Writes the transcript text into the entry's `.md` file and updates the
+    /// manifest entry's `source` and `updatedAt` in place.
+    //
+    // AI:
+    //   what: DiaryStore.setTranscript — atomic write of transcript text + manifest-side metadata update
+    //   why:  PRD #18 — the post-recording pipeline must persist the final transcription onto disk
+    //         (closing ISSUE-015's gap where transcripts never made it to .md). The write follows the
+    //         same atomic pattern as `append` and `saveManifest`: `Data.write(to:, options: .atomic)`
+    //         performs temp-write + osrename, so a crash mid-write leaves a consistent prior state
+    //         (per acceptance criterion #4). The manifest is then mutation-updated in place with the
+    //         new `source` and a fresh `updatedAt`, mirroring `update(entry:)`.
+    //   ref:  PRD 18-transcription-post-recording-pipeline, ISSUE-015
+    public func setTranscript(for id: UUID, source: TranscriptSource, text: String) async throws {
+        try await ensureFolder()
+
+        var manifest = try await loadManifest()
+        guard let index = manifest.entries.firstIndex(where: { $0.id == id }) else {
+            throw StoreError.entryNotFound(id: id)
+        }
+
+        // Atomic write of the transcript text into the entry's .md file.
+        var entry = manifest.entries[index]
+        let transcriptURL = folder.appending(path: entry.transcriptPath)
+        guard let data = text.data(using: .utf8) else {
+            throw StoreError.encodingFailed
+        }
+        try data.write(to: transcriptURL, options: .atomic)
+
+        // Update the manifest entry's source and updatedAt in place.
+        entry.source = source
+        entry.updatedAt = Date()
+        manifest.entries[index] = entry
+
+        try await saveManifest(manifest)
+        try await writePerEntryMetadata(entry)
+    }
+
     public func delete(id: UUID) async throws {
         var manifest = try await loadManifest()
         guard let index = manifest.entries.firstIndex(where: { $0.id == id }) else {

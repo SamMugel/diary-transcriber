@@ -2,7 +2,7 @@
   "title": "Transcription Post-Recording Pipeline",
   "priority": 1,
   "depends": ["audio-recorder", "whisper-client", "transcription-service", "diary-store", "transcription-service-bootstrap", "recorder-stop-error-handling"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Add DiaryStore.setTranscript(for id: UUID, source: TranscriptSource, text: String) async throws that writes the transcript text into the entry's .md via temp-write + osrename (same atomic pattern as append), then updates entry.source and entry.updatedAt in manifest.json in place",
     "In RecordingViewModel.stop(), after recorder.stop() returns a non-empty URL, call the injected service.transcribe(at:) and iterate the AsyncStream<TranscriptUpdate>; set isFinalizing = true while streaming and false on terminal update",
@@ -20,5 +20,9 @@
     "Live streaming during recording (see live-transcript-streaming)",
     "Re-transcribe button from EntryDetailView (see retranscribe-button)",
     "App-level service construction / DI (see transcription-service-bootstrap)"
+  ],
+  "notes": [
+    "Implementation deviates from the literal 'stop() calls store.setTranscript' wording in requirement 3 for a hard lifecycle reason: setTranscript requires the manifest row to already exist, but that row is only created downstream in ContentView.finishRecording via store.append. stop() therefore runs the transcription pipeline and exposes the final Transcript via the new completedTranscript field + the widened onCompleted(entry, transcript) callback; finishRecording appends then calls setTranscript. This preserves the PRD's intent (transcript persists to .md and updates manifest source/updatedAt atomically) at the correct point in the lifecycle.",
+    "stop() exposes completedTranscript: Transcript? (and transcriptionError: String for the .failed path) as out-parameters rather than calling store.setTranscript itself."
   ]
 }

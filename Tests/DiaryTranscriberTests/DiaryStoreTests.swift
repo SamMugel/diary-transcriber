@@ -153,6 +153,76 @@ final class DiaryStoreTests: XCTestCase {
         XCTAssertEqual(entries.count, 1, "Concurrent updates should not duplicate entries")
     }
 
+    // MARK: - setTranscript (PRD #18)
+
+    // AI:
+    //   what: setTranscript writes transcript text into the entry's `.md` and updates manifest
+    //   why:  PRD #18 — the post-recording pipeline persists transcript text atomically; this test
+    //         verifies both the on-disk `.md` content *and* the manifest's source/updatedAt mutation
+    //         so neither side of the contract regresses silently.
+    //   ref:  PRD 18-transcription-post-recording-pipeline, ISSUE-015
+    func testSetTranscript_writesTextToMDFile() async throws {
+        let store = DiaryStore(folder: tempDir)
+        let entry = makeEntry(startedAt: Date(timeIntervalSince1970: 1727943900))
+        try await store.append(entry: entry)
+
+        try await store.setTranscript(for: entry.id, source: .whisper, text: "Hello, world.")
+
+        let transcriptURL = tempDir.appending(path: entry.transcriptPath)
+        let text = try String(contentsOf: transcriptURL, encoding: .utf8)
+        XCTAssertEqual(text, "Hello, world.", "setTranscript should write the text to the .md file")
+    }
+
+    func testSetTranscript_updatesManifestSourceAndUpdatedAt() async throws {
+        let store = DiaryStore(folder: tempDir)
+        let entry = makeEntry(startedAt: Date(timeIntervalSince1970: 1727943900))
+        try await store.append(entry: entry)
+
+        // Capture the on-disk updatedAt as committed by `append` (not the
+        // fabrication-time `entry.updatedAt`, which may share Date() ticks
+        // with setTranscript on a fast host). setTranscript's contract is to
+        // never roll `updatedAt` backward — assert that, plus the stronger
+        // signal: `source` actually changes from .none to .speech.
+        let preEntries = try await store.entries()
+        let preUpdated = preEntries.first(where: { $0.id == entry.id })
+        let baselineUpdatedAt = preUpdated?.updatedAt ?? entry.updatedAt
+
+        try await store.setTranscript(for: entry.id, source: .speech, text: "new text")
+
+        let entries = try await store.entries()
+        guard let updated = entries.first(where: { $0.id == entry.id }) else {
+            return XCTFail("Entry should still be present after setTranscript")
+        }
+        XCTAssertEqual(updated.source, .speech, "Manifest source should be updated to .speech")
+        XCTAssertGreaterThanOrEqual(updated.updatedAt, baselineUpdatedAt, "Manifest updatedAt should not roll backward past the pre-update value")
+    }
+
+    func testSetTranscript_unknownID_throwsEntryNotFound() async throws {
+        let store = DiaryStore(folder: tempDir)
+        // Don't append any entry.
+        do {
+            try await store.setTranscript(for: UUID(), source: .none, text: "ghost")
+            XCTFail("setTranscript on unknown id should throw")
+        } catch StoreError.entryNotFound {
+            // Expected.
+        }
+    }
+
+    func testSetTranscript_atomicWrite_doesNotCorruptOnValidInput() async throws {
+        // Acceptance criterion #4: atomic writes (temp + rename) leave a consistent prior state.
+        // Verify writing a large transcript round-trips through the .md file intact.
+        let store = DiaryStore(folder: tempDir)
+        let entry = makeEntry(startedAt: Date(timeIntervalSince1970: 1727943900))
+        try await store.append(entry: entry)
+
+        let largeText = String(repeating: "a", count: 5_000)
+        try await store.setTranscript(for: entry.id, source: .whisper, text: largeText)
+
+        let transcriptURL = tempDir.appending(path: entry.transcriptPath)
+        let text = try String(contentsOf: transcriptURL, encoding: .utf8)
+        XCTAssertEqual(text.count, 5_000, "Large transcript should round-trip intact")
+    }
+
     // MARK: - Helpers
 
     private func makeEntry(startedAt: Date) -> DiaryEntry {

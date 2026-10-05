@@ -11,15 +11,21 @@ public struct RecordingView: View {
     @State private var viewModel: RecordingViewModel
     @Environment(\.dismiss) private var dismiss
 
-    /// Called when recording completes with the finished DiaryEntry.
-    /// The entry holds absolute paths to the audio file (and its companion .md path).
-    /// The caller (e.g., ListViewModel) copies these into the store folder and persists.
-    private var onCompleted: ((DiaryEntry) -> Void)?
+    /// Called when recording completes with the finished `DiaryEntry` plus the final
+    /// `Transcript` produced by the post-recording transcription pipeline (or nil if
+    /// transcription yielded no final transcript, e.g. failure or no service wired).
+    /// The caller (e.g., ListViewModel via `finishRecording`) copies the audio + transcript
+    /// into the store folder and persists both via `append` then `setTranscript`.
+    // AI: PRD #18 — `onCompleted` now carries the Transcript so `finishRecording` can call
+    //     `store.setTranscript` AFTER `store.append` creates the manifest row (setTranscript
+    //     requires the row to exist — `stop()` cannot call it directly because the manifest
+    //     entry is only created downstream in `finishRecording`).
+    private var onCompleted: ((DiaryEntry, Transcript?) -> Void)?
     private var onCancel: (() -> Void)?
 
     public init(
         viewModel: RecordingViewModel = RecordingViewModel(),
-        onCompleted: ((DiaryEntry) -> Void)? = nil,
+        onCompleted: ((DiaryEntry, Transcript?) -> Void)? = nil,
         onCancel: (() -> Void)? = nil
     ) {
         self._viewModel = State(initialValue: viewModel)
@@ -49,9 +55,11 @@ public struct RecordingView: View {
         }
         .onChange(of: viewModel.completedEntry) { _, newValue in
             // Auto-dismiss when the entry is committed (non-nil) to the view-model,
-            // which happens after stop() completes.
+            // which happens after stop() completes. The matching Transcript (if any)
+            // is propagated to `onCompleted` so the downstream `finishRecording` can
+            // persist it via `store.setTranscript` after `store.append`.
             if let entry = newValue {
-                onCompleted?(entry)
+                onCompleted?(entry, viewModel.completedTranscript)
                 dismiss()
             }
         }

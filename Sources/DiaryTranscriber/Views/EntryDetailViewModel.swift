@@ -62,6 +62,18 @@ public final class EntryDetailViewModel {
     public func saveIfChanged() async {
         guard hasUnsavedChanges, let store else { return }
         do {
+            // AI: PRD #18 — route blur-save through `store.setTranscript` rather
+            //     than `store.update` so the edited transcript text is persisted
+            //     into the entry's `.md` (closing ISSUE-015's gap where inline
+            //     edits only updated the manifest and never reached disk).
+            //     The new source is kept if the entry has one, else `.none`.
+            //     ref: PRD 18, ISSUE-015
+            try await store.setTranscript(
+                for: entry.id,
+                source: entry.source,
+                text: transcriptText
+            )
+            // Persist other metadata changes (e.g. duration) via the existing path.
             try await store.update(entry: entry)
             hasUnsavedChanges = false
         } catch {

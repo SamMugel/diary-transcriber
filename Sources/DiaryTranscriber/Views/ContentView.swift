@@ -49,7 +49,14 @@ public final class ListViewModel {
 
     /// Called when RecordingView finishes (recording stopped + entry committed).
     /// Moves the audio file into the store folder, persists the entry, and refreshes.
-    public func finishRecording(entry: DiaryEntry) async {
+    /// If a final `Transcript` is supplied (from the post-recording transcription pipeline),
+    /// it is persisted via `store.setTranscript` AFTER `store.append` creates the manifest row
+    /// — `setTranscript` requires the row to already exist, and `append` is what writes it.
+    // AI: PRD #18 — finishRecording is the canonical persistence seam where the manifest row is
+    //     created, so it's also where setTranscript is called. stop() runs the transcription
+    //     pipeline and exposes the Transcript via onCompleted; it does NOT call setTranscript
+    //     itself (the entry doesn't exist in the manifest yet at that point).
+    public func finishRecording(entry: DiaryEntry, transcript: Transcript? = nil) async {
         showRecordingSheet = false
         isRecording = false
 
@@ -87,7 +94,22 @@ public final class ListViewModel {
             try? FileManager.default.removeItem(at: destURL)
             try FileManager.default.moveItem(at: sourceURL, to: destURL)
 
+            // AI: create the manifest row first — setTranscript requires it to exist.
             try await store.append(entry: resolvedEntry)
+
+            // AI: persist the final transcript (if any) into the entry's `.md` and update
+            //     the manifest's source/updatedAt. This is the `tail end` of the post-recording
+            //     pipeline: stop() ran transcription → here we atomically write the text to disk.
+            //     On failure/no transcript, the entry keeps `.none` source + empty `.md` (created
+            //     by `append`) so the timeline still shows the recorded audio (criterion #4).
+            if let transcript {
+                try await store.setTranscript(
+                    for: resolvedEntry.id,
+                    source: transcript.source,
+                    text: transcript.text
+                )
+            }
+
             await refresh()
         } catch {
             // Persist failed — refresh anyway so the user sees current state.
@@ -161,10 +183,15 @@ public struct ContentView: View {
         .frame(minWidth: 720, minHeight: 540)
         .sheet(isPresented: $viewModel.showRecordingSheet) {
             RecordingView(
-                viewModel: RecordingViewModel(transcriptionService: env.transcriptionService),
-                onCompleted: { entry in
+                // AI: PRD #18 — `onCompleted` carries the final Transcript (or nil) so
+                //     `finishRecording` can call `store.setTranscript` after `store.append`.
+                //     PRD #28 wires the shared TranscriptionService directly into the VM.
+                viewModel: RecordingViewModel(
+                    transcriptionService: env.transcriptionService
+                ),
+                onCompleted: { entry, transcript in
                     Task {
-                        await viewModel.finishRecording(entry: entry)
+                        await viewModel.finishRecording(entry: entry, transcript: transcript)
                     }
                 },
                 onCancel: {
