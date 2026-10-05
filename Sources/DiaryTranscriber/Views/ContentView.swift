@@ -26,6 +26,17 @@ public final class ListViewModel {
     //     finishRecording runs, so it is safe to retry the move+append.
     private var lastFailedFinish: (DiaryEntry, Transcript?)? = nil
 
+    // AI: PRD #27 — per-entry transcript excerpt cache so a 1,000-entry timeline does
+    //     not re-read every `.md` on each SwiftUI redraw. The key is `entry.id`; the
+    //     value is the already-truncated preview text (with trailing "…" when the
+    //     transcript exceeded the excerpt length) or "No transcript yet" for entries
+    //     with `source == .none`. A `nil` value means "not yet loaded" — the first
+    //     redraw that observes a `nil` caches kicks off a single Task to populate it;
+    //     subsequent redraws find a stored value and skip disk entirely. Stored as a
+    //     plain `var` on this `@Observable` so SwiftUI invalidates the affected rows
+    //     when an excerpt lands without reloading the whole list.
+    public var previewExcerpts: [UUID: String] = [:]
+
     private let store: DiaryStore?
     // AI: PRD #28 — shared TranscriptionService injected from AppEnvironment so view-models never
     //     default-construct a per-VM service. Optional + nil-default keeps existing tests that
@@ -45,6 +56,51 @@ public final class ListViewModel {
             entries = try await store.entries()
         } catch {
             entries = []
+        }
+
+        // AI: PRD #27 — drop preview-cache entries for ids no longer in the manifest
+        //     (deleted entries) so the cache does not grow unbounded across refreshes.
+        let liveIDs = Set(entries.map(\.id))
+        previewExcerpts = previewExcerpts.filter { liveIDs.contains($0.key) }
+        kickOffPreviewLoads()
+    }
+
+    // AI: PRD #27 — for every entry without a cached preview, fire a single Task
+    //     to load the excerpt from disk. `.none`-source entries are cached
+    //     synchronously here ("No transcript yet") so they never spawn I/O and never
+    //     flip from empty → populated, which would re-render the row a second time.
+    //     The per-entry cache prevents repeated reads across redraws: a Task is only
+    //     started the first time an id is observed without a cached value.
+    private func kickOffPreviewLoads() {
+        guard let store else { return }
+        for entry in entries where previewExcerpts[entry.id] == nil {
+            if entry.source == .none {
+                previewExcerpts[entry.id] = "No transcript yet"
+                continue
+            }
+            Task {
+                // AI: PRD #27 — request one extra char beyond the display length so we
+                //     can detect "there was more to read" and append "…" without
+                //     mis-flagging transcripts that are exactly `length` chars long.
+                let excerptLength = 120
+                let raw = (try? await store.excerpt(for: entry, length: excerptLength + 1)) ?? ""
+                // Guards against a row that was deleted or re-loaded while the Task
+                // was inflight; only commit a value for ids still in `entries`.
+                if entries.contains(where: { $0.id == entry.id }) {
+                    let preview: String
+                    if raw.isEmpty {
+                        preview = ""
+                    } else if raw.count > excerptLength {
+                        // More transcript existed beyond the display length:
+                        // truncate to exactly `excerptLength` and append U+2026.
+                        let end = raw.index(raw.startIndex, offsetBy: excerptLength)
+                        preview = String(raw[raw.startIndex..<end]) + "…"
+                    } else {
+                        preview = raw
+                    }
+                    previewExcerpts[entry.id] = preview
+                }
+            }
         }
     }
 
@@ -358,7 +414,10 @@ public struct ContentView: View {
                     LazyVStack(spacing: 0) {
                         ForEach(viewModel.entries) { entry in
                             NavigationLink(value: entry) {
-                                EntryRow(entry: entry)
+                                EntryRow(
+                                    entry: entry,
+                                    preview: viewModel.previewExcerpts[entry.id] ?? ""
+                                )
                             }
                             .buttonStyle(.plain)
                             Divider()
@@ -420,8 +479,15 @@ public struct ContentView: View {
 public struct EntryRow: View {
     public let entry: DiaryEntry
 
-    public init(entry: DiaryEntry) {
+    /// Cached transcript preview pre-loaded by the parent list view-model (PRD #27).
+    /// Pass the already-truncated string so this view never touches disk and never
+    /// re-reads the transcript `.md` on redraw. Empty string means "still loading or
+    /// no preview available"; "No transcript yet" is delivered for `.none`-source rows.
+    public let preview: String
+
+    public init(entry: DiaryEntry, preview: String = "") {
         self.entry = entry
+        self.preview = preview
     }
 
     public var body: some View {
@@ -478,11 +544,12 @@ public struct EntryRow: View {
         return "\(minutes):\(String(format: "%02d", seconds))"
     }
 
-    /// One-line transcript excerpt (first ~120 chars), truncated with ellipsis.
+    /// One-line transcript excerpt delivered by the list view-model (PRD #27).
+    /// The value is cached in `ListViewModel.previewExcerpts` to avoid re-reading
+    /// the transcript `.md` on every redraw; here we only render what was already
+    /// loaded.
     private var excerpt: String {
-        // No transcript text is available in the model; short placeholder.
-        // In production, this would read from the transcript file.
-        ""
+        preview
     }
 }
 

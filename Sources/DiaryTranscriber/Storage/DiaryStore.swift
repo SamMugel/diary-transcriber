@@ -129,6 +129,31 @@ public actor DiaryStore {
         )
     }
 
+    /// Reads the first `length` characters of the entry's `.md` transcript for use
+    /// as a one-line timeline preview. Returns `""` when the transcript file is
+    /// missing, empty, or when the entry's `source` is `.none` (no transcript has
+    /// been produced yet) so callers never need to branch on the failure case.
+    //
+    // AI:
+    //   what: DiaryStore.excerpt — short, bounded read of a transcript file for timeline previews
+    //   why:  PRD #27 — the timeline must show a ≤1-line excerpt of each entry's transcript without
+    //         re-reading the full `.md` on every redraw of a 1,000-entry list. Reading only the
+    //         first `length` chars keeps both I/O and memory bounded per row, and gating on
+    //         `source == .none` lets the row surface "No transcript yet" without touching disk
+    //         for entries that have never been transcribed (avoiding a stat on every pending row).
+    //         Returns `""` (not a throw) for missing/empty transcript so callers that already
+    //         treat empty text as "no preview" are unaffected, matching the `data(for:)` contract
+    //         which returns empty transcript text for fresh entries created by `append`.
+    //   ref:  PRD 27-timeline-excerpt, DiaryStore.loadText
+    public func excerpt(for entry: DiaryEntry, length: Int = 120) async throws -> String {
+        guard entry.source != .none else { return "" }
+        let transcriptURL = folder.appending(path: entry.transcriptPath)
+        let full = try await loadText(transcriptURL)
+        guard full.count > length else { return full }
+        let endIndex = full.index(full.startIndex, offsetBy: length)
+        return String(full[full.startIndex..<endIndex])
+    }
+
     // MARK: - Private: Manifest I/O
 
     private func loadManifest() async throws -> Manifest {

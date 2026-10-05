@@ -223,6 +223,83 @@ final class DiaryStoreTests: XCTestCase {
         XCTAssertEqual(text.count, 5_000, "Large transcript should round-trip intact")
     }
 
+    // MARK: - excerpt (PRD #27)
+
+    // AI:
+    //   what: DiaryStore.excerpt contract tests
+    //   why:  PRD #27 — the timeline preview reads the first `length` chars of each entry's
+    //         transcript. These tests pin the contract: bounded slice, empty for missing/empty,
+    //         empty for `.none` source (no disk read for pending rows), and full text when the
+    //         transcript is shorter than the requested length.
+    //   ref:  PRD 27-timeline-excerpt
+
+    func testExcerpt_returnsFirstNCharsOfTranscript() async throws {
+        let store = DiaryStore(folder: tempDir)
+        let entry = makeEntry(startedAt: Date(timeIntervalSince1970: 1727943900))
+        try await store.append(entry: entry)
+        try await store.setTranscript(
+            for: entry.id,
+            source: .speech,
+            text: "The quick brown fox jumps over the lazy dog."
+        )
+
+        let persisted = try await store.entries().first { $0.id == entry.id }!
+        let excerpt = try await store.excerpt(for: persisted, length: 10)
+        XCTAssertEqual(excerpt, "The quick ", "Should return the first 10 characters of the transcript")
+    }
+
+    func testExcerpt_defaultLengthIs120() async throws {
+        let store = DiaryStore(folder: tempDir)
+        let entry = makeEntry(startedAt: Date(timeIntervalSince1970: 1727943900))
+        try await store.append(entry: entry)
+        // 200 chars → default length 120 should truncate.
+        try await store.setTranscript(
+            for: entry.id,
+            source: .whisper,
+            text: String(repeating: "x", count: 200)
+        )
+
+        let persisted = try await store.entries().first { $0.id == entry.id }!
+        let excerpt = try await store.excerpt(for: persisted)
+        XCTAssertEqual(excerpt.count, 120, "Default length should be 120 chars")
+    }
+
+    func testExcerpt_returnsFullTextWhenShorterThanLength() async throws {
+        let store = DiaryStore(folder: tempDir)
+        let entry = makeEntry(startedAt: Date(timeIntervalSince1970: 1727943900))
+        try await store.append(entry: entry)
+        try await store.setTranscript(for: entry.id, source: .speech, text: "short")
+
+        let persisted = try await store.entries().first { $0.id == entry.id }!
+        let excerpt = try await store.excerpt(for: persisted, length: 120)
+        XCTAssertEqual(excerpt, "short", "Should return full text when shorter than length")
+    }
+
+    func testExcerpt_returnsEmptyForMissingTranscript() async throws {
+        // Entry is appended (creating an empty .md), but never receives text via setTranscript.
+        let store = DiaryStore(folder: tempDir)
+        let entry = makeEntry(startedAt: Date(timeIntervalSince1970: 1727943900))
+        // append() writes an empty .md via writeTranscriptFile and stores source as .none.
+        // Flip the source to .speech so excerpt does not short-circuit on the `.none` gate,
+        // but do NOT call setTranscript — the .md remains empty.
+        var withSource = entry
+        withSource.source = .speech
+        try await store.append(entry: entry)
+        try await store.update(entry: withSource)
+
+        let excerpt = try await store.excerpt(for: withSource, length: 120)
+        XCTAssertEqual(excerpt, "", "Empty transcript should return empty excerpt")
+    }
+
+    func testExcerpt_returnsEmptyForNoneSourceWithoutReadingDisk() async throws {
+        // `.none` source → excerpt must short-circuit to "" without requiring the file to exist.
+        let store = DiaryStore(folder: tempDir)
+        let entry = makeEntry(startedAt: Date(timeIntervalSince1970: 1727943900))
+        // Do NOT append — no transcript file exists at all.
+        let excerpt = try await store.excerpt(for: entry, length: 120)
+        XCTAssertEqual(excerpt, "", ".none source should return empty excerpt without disk access")
+    }
+
     // MARK: - Helpers
 
     private func makeEntry(startedAt: Date) -> DiaryEntry {
