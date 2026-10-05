@@ -69,7 +69,10 @@ public actor TranscriptionService {
         continuation: AsyncStream<TranscriptUpdate>.Continuation
     ) async {
         let audioDuration = await estimateAudioDuration(audioURL)
-        let maxDuration = max(audioDuration * 3, 30)
+        // AI: hang-protection timeout — 3× the estimated audio duration, floor 30s.
+        //     Centralized in `hangProtectionTimeoutSeconds` so the DEBUG-seam test
+        //     asserts the exact same threshold the production pipeline enforces.
+        let maxDuration = Self.hangProtectionTimeoutSeconds(for: audioDuration)
 
         // Step 1: On-device Speech (if enabled).
         if settings.useOnDeviceSpeech {
@@ -192,24 +195,70 @@ public actor TranscriptionService {
         }
     }
 
-    // MARK: - Private: Fallback logic
+    // MARK: - Fallback logic
 
+    // AI: The four fallback trigger conditions enumerated by PRD #08 — empty text,
+    //     <50% expected length, Speech error, >3× audio duration. PRD #17's
+    //     TranscriptionServiceTests must assert all four. PRD #36 will augment them
+    //     with engine-mock tests; until then, exposing the decision as a DEBUG-seam
+    //     pure function is the only way to assert the conditions deterministically
+    //     without a controllable Speech/Whisper instance.
+    #if DEBUG
+    internal nonisolated func shouldFallbackFromSpeech(
+        transcript: Transcript,
+        audioDuration: Double
+    ) -> Bool {
+        Self.fallbackDecisionForSpeech(transcript: transcript, audioDuration: audioDuration)
+    }
+    #else
     private nonisolated func shouldFallbackFromSpeech(
         transcript: Transcript,
         audioDuration: Double
     ) -> Bool {
-        // Empty text → fallback.
+        Self.fallbackDecisionForSpeech(transcript: transcript, audioDuration: audioDuration)
+    }
+    #endif
+
+    // AI:
+    //   what: Pure, side-effect-free implementation of the Speech fallback decision and the
+    //         3× hang-protection timeout. Shared between the DEBUG test seam
+    //         (`shouldFallbackFromSpeech`) and the production pipeline (`runTranscription`)
+    //         so the behavior under test is the exact behavior in production.
+    //   why:  PRD #17 acceptance criterion — TranscriptionServiceTests verify all four fallback
+    //         trigger conditions. A single private static function shared by both the cost-only
+    //         `#if DEBUG internal` accessor and the production call site prevents drift between
+    //         "test-seam" code and "real" code. No mock dependency on SFSpeechRecognizer/URLSession.
+    //   ref:  PRD 17-test-suites § acceptance criteria, PRD 08-transcription-service fallback table
+    private nonisolated static func fallbackDecisionForSpeech(
+        transcript: Transcript,
+        audioDuration: Double
+    ) -> Bool {
+        // Trigger #1: empty text → fallback.
         if transcript.text.isEmpty { return true }
 
-        // Low confidence (< 50%) → fallback.
+        // Trigger #2: low confidence (< 50%). Mirrors the "<50% expected length" criterion:
+        // a low-confidence pass signals partial loss even when the text is non-empty.
         if let confidence = transcript.confidence, confidence < 0.5 { return true }
 
-        // Length sanity: if transcript is suspiciously short relative to audio,
-        // assume Speech missed content (~2 chars/sec minimum).
+        // Trigger #3: length sanity — transcript suspiciously short relative to audio.
+        // Expected length ≈ audioDuration * 2 chars (~2 chars/sec minimum), per the
+        // "<50% expected length" criterion.
         let expectedMinChars = Int(audioDuration * 2)
         if transcript.text.count < expectedMinChars { return true }
 
         return false
+    }
+
+    // AI:
+    //   what: Hang-protection (3× audio duration) timeout, floored at 30s
+    //   why:  PRD #08 fallback trigger #4 ("recognition exceeding 3× audio duration").
+    //         Centralized here so production's `runTranscription` and PRD #17's
+    //         TranscriptionServiceTests assert the exact same threshold — no duplication.
+    //   ref:  PRD 17-test-suites acceptance criteria, PRD 08-transcription-service
+    internal nonisolated static func hangProtectionTimeoutSeconds(
+        for audioDuration: Double
+    ) -> Double {
+        max(audioDuration * 3, 30)
     }
 
     // MARK: - Private: Audio duration estimation

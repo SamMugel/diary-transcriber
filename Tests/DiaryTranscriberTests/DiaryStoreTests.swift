@@ -119,6 +119,25 @@ final class DiaryStoreTests: XCTestCase {
         )
     }
 
+    // MARK: - folderURL
+
+    // AI:
+    //   what: DiaryStore.folderURL() returns the store's configured folder
+    //   why:  PRD #17 acceptance criterion #1 — 100% coverage on DiaryStore public API.
+    //         `folderURL()` is the only public API member without a dedicated test; pinning
+    //         it guards against a refactor that (for example) returns `manifestURL` by mistake
+    //         or fails to round-trip the folder the store was opened with.
+    //   ref:  PRD 17-test-suites acceptance criterion 1, Sources/DiaryTranscriber/Storage/DiaryStore.swift
+    func testFolderURL_returnsConfiguredFolder() async throws {
+        let store = DiaryStore(folder: tempDir)
+        let returned = await store.folderURL()
+        XCTAssertEqual(
+            returned.standardizedFileURL.path,
+            tempDir.standardizedFileURL.path,
+            "folderURL() should return the same URL the store was opened with"
+        )
+    }
+
     // MARK: - Data
 
     func testData_returnsTranscriptAndMetadata() async throws {
