@@ -46,6 +46,17 @@ public final class ListViewModel {
     //     TranscriptUpdate.final without microphone or network.
     private let transcriptionService: TranscriptionServiceProtocol?
 
+    // AI: PRD #32 — FileSystemWatcher observes the diary output folder for external file
+    //     changes (new .m4a dropped in, file deleted). Each debounced emission triggers
+    //     refresh() so the timeline updates without a manual refresh. The watcher is
+    //     optional and lazily created by startWatching() because the folder URL lives on
+    //     the DiaryStore actor and cannot be read synchronously from init.
+    private var watcher: FileSystemWatcher?
+    // AI: PRD #32 — the long-lived subscription Task that iterates the watcher's
+    //     AsyncStream. Stored so teardown() can cancel it when ContentView disappears,
+    //     preventing the subscription from outliving the view-model (no leaked Task).
+    private var watcherTask: Task<Void, Never>?
+
     public init(store: DiaryStore? = nil, transcriptionService: TranscriptionServiceProtocol? = nil) {
         self.store = store
         self.transcriptionService = transcriptionService
@@ -54,6 +65,9 @@ public final class ListViewModel {
         //     and auto-cancels on disappear. Previously a discarded `Task { await
         //     refresh() }` here would outlive the view-model if the view was
         //     destroyed during init (ISSUE-017).
+        // AI: PRD #32 — the FileSystemWatcher is also started from ContentView's
+        //     .task (via startWatching()) so the view owns the lifecycle; teardown()
+        //     in .onDisappear cancels the subscription Task.
     }
 
     public func refresh() async {
@@ -69,6 +83,53 @@ public final class ListViewModel {
         let liveIDs = Set(entries.map(\.id))
         previewExcerpts = previewExcerpts.filter { liveIDs.contains($0.key) }
         kickOffPreviewLoads()
+    }
+
+    // AI:
+    //   what: startWatching() — lazily creates the FileSystemWatcher and subscribes to its debounced emissions
+    //   why:  PRD #32 — the diary folder is observed for external file changes (new .m4a dropped in,
+    //         file deleted). Each debounced emission triggers refresh() so the timeline stays in sync
+    //         without a manual refresh. The folder URL lives on the DiaryStore actor so the watcher
+    //         cannot be created in init (actor method calls require await); this async method is
+    //         called from ContentView's .task alongside the initial refresh. Idempotent — a second
+    //         call is a no-op so re-appearance of the view does not spawn duplicate subscriptions.
+    //   ref:  PRD 32-filesystem-watcher-hookup, PRD 10-file-system-watcher
+    public func startWatching() async {
+        guard let store, watcher == nil else { return }
+
+        let folderURL = await store.folderURL()
+        let watcher = FileSystemWatcher(folder: folderURL)
+        self.watcher = watcher
+
+        watcherTask = Task { @MainActor in
+            let stream = await watcher.watch()
+            for await _ in stream {
+                // AI: PRD #32 — each debounced emission from the FileSystemWatcher
+                //     triggers refresh() so the timeline picks up additions, deletions,
+                //     and manifest changes within ~2s. The watcher's own debounce
+                //     (PRD 10) collapses burst writes so we never call refresh() more
+                //     than ~2 times for 10 files in 1s.
+                guard !Task.isCancelled else { break }
+                await refresh()
+            }
+        }
+    }
+
+    // AI:
+    //   what: teardown() — cancels the watcher subscription Task and stops the FileSystemWatcher actor
+    //   why:  PRD #32 — when ContentView disappears, the watcher subscription Task must be cancelled
+    //         so it does not outlive the view-model (no leaked subscription). Mirrors the
+    //         RecordingViewModel.teardown() pattern (PRD 24): unconditional, idempotent, safe to
+    //         call from any state (idle, watching, mid-refresh). If the watcher has never been
+    //         started (e.g. tests that don't call startWatching()), teardown is a no-op.
+    //   ref:  PRD 32-filesystem-watcher-hookup, PRD 24-recording-timer-leak
+    public func teardown() async {
+        watcherTask?.cancel()
+        watcherTask = nil
+        if let watcher {
+            await watcher.stop()
+        }
+        self.watcher = nil
     }
 
     // AI: PRD #27 — for every entry without a cached preview, fire a single Task
@@ -441,6 +502,25 @@ public struct ContentView: View {
             //     the view appears and cancelled when it goes away, guaranteeing
             //     @MainActor state is only touched from a visible view-model.
             await viewModel.refresh()
+            // AI: PRD #32 — start the FileSystemWatcher subscription so external
+            //     file changes in the diary folder trigger automatic refreshes.
+            //     The subscription Task is owned by the view-model and cancelled in
+            //     .onDisappear via teardown(); a re-appearing view re-enters this
+            //     .task but startWatching() is idempotent (guard on watcher == nil).
+            await viewModel.startWatching()
+        }
+        .onDisappear {
+            // AI: PRD #32 — cancel the watcher subscription Task so it does not
+            //     outlive the view-model when ContentView disappears. teardown()
+            //     is idempotent and safe from any state; it mirrors the
+            //     RecordingViewModel.teardown() pattern (PRD 24). Wrapped in a
+            //     MainActor Task because .onDisappear is synchronous and
+            //     teardown() is async — the cancellation of watcherTask happens
+            //     synchronously before the first await, so the subscription is
+            //     stopped immediately.
+            Task { @MainActor in
+                await viewModel.teardown()
+            }
         }
     }
 
