@@ -2,7 +2,7 @@
   "title": "Packaging and Release",
   "priority": 7,
   "depends": ["recording-view", "entry-detail-view", "settings-view", "timeline"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Create app icon: 1024×1024 PNG + full .icns set (16–1024px)",
     "Add remaining Info.plist keys per specs/packaging.md not in PRD 01: icon reference, category, version strings",
