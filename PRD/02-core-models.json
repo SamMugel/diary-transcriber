@@ -2,7 +2,7 @@
   "title": "Core Models",
   "priority": 1,
   "depends": [],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Implement DiaryEntry struct (id: UUID, startedAt: Date, durationSeconds: Double, audioPath: String, transcriptPath: String, source: TranscriptSource, createdAt: Date, updatedAt: Date) as Hashable, Codable, Sendable",
     "Implement Transcript struct (text: String, confidence: Double?, source: TranscriptSource, isFinal: Bool) as Hashable, Codable, Sendable",
@@ -17,5 +17,6 @@
   "out_of_scope": [
     "Persistence logic",
     "UI bindings"
-  ]
+  ],
+  "notes": "Audit-flip from prior Ralph loops. All four types exist in Sources/DiaryTranscriber/Models/ with the exact field declarations and conformance clauses specified: DiaryEntry (8 fields, Hashable+Codable+Sendable+Identifiable, private CodingKeys for all fields), Transcript (4 fields, Hashable+Codable+Sendable, private CodingKeys), TranscriptSource (String rawValue, lowercase case names speech/whisper/none), TranscriptUpdate (3 cases with payload, Sendable). Existing test coverage in Tests/DiaryTranscriberTests/CoreModelTests.swift already covers every acceptance criterion: testDiaryEntry_roundTripsJSON_noDataLoss, testDiaryEntry_defaultUpdatedAt_equalsCreatedAt, testTranscriptSource_encodesAsLowercaseString + decode-reverse, testTranscript_roundTripsJSON_noDataLoss, testTranscript_confidenceDefaultsToNilWhenAbsent, and three testTranscriptUpdate_* cases. Tests pass (part of the 82-test green suite validated this loop). No code changes needed — status-flip only."
 }
