@@ -38,6 +38,11 @@ public struct EntryDetailView: View {
             await viewModel.loadAudio()
         }
         .onDisappear {
+            // AI: PRD #31 — tear down the AVAudioPlayer when the user navigates away from this
+            //     entry so no audio session lingers mid-playback. cleanup() is idempotent
+            //     (safe even after playback has finished or never started), and keeps the
+            //     save-on-blur logic above as the other concern of onDisappear.
+            viewModel.audioPlayer.cleanup()
             Task { await viewModel.saveIfChanged() }
         }
     }

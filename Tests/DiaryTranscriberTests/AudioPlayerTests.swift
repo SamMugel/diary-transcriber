@@ -77,4 +77,79 @@ final class AudioPlayerTests: XCTestCase {
         player.currentTime = 15
         XCTAssertEqual(player.progress, 1.0, "Progress should clamp to 1.0")
     }
+
+    // MARK: - cleanup (PRD #31)
+
+    // AI:
+    //   what: cleanup resets observable playback state to a quiescent baseline
+    //   why:  PRD #31 — `cleanup()` must be safe to call from EntryDetailView.onDisappear.
+    //         We can't feed a real AVAudioPlayer in a unit test (needs PCM bytes on disk),
+    //         but we can pre-seed isPlaying/currentTime to a mid-playback profile and verify
+    //         cleanup leaves everything reset to initial values. This pins the observable
+    //         contract that the SwiftUI bindings rely on: `isPlaying = false`,
+    //         `currentTime = 0`, `progress = 0` afterwards. The underlying player reference
+    //         is private, so we assert via the observable surface.
+    //   ref:  PRD 31-audio-player-cleanup.json
+    @MainActor
+    func testCleanup_resetsPlaybackState() {
+        let player = AudioPlayer()
+        // Seed a mid-playback profile directly on the observable surface.
+        player.currentTime = 42
+        player.duration = 60
+        player.isPlaying = true
+
+        player.cleanup()
+
+        XCTAssertFalse(player.isPlaying, "cleanup must stop playback")
+        XCTAssertEqual(player.currentTime, 0, "cleanup must reset currentTime to 0")
+        XCTAssertEqual(player.progress, 0, "cleanup must zero out progress")
+    }
+
+    // AI:
+    //   what: cleanup is idempotent — calling it twice has no side-effects
+    //   why:  PRD #31 acceptance criterion #2 — EntryDetailView.onDisappear fires once, but the
+    //         guarantee is reused if the view is re-entered, and SwiftUI can lifecycle the view
+    //         with arbitrary onDisappear/onAppear counts. cleanup() must not fault or throw on
+    //         repeat invocation. We assert the observable state stays stable across the second
+    //         call (no flipped flags, no resurrected playback).
+    //   ref:  PRD 31-audio-player-cleanup.json
+    @MainActor
+    func testCleanup_isIdempotent() {
+        let player = AudioPlayer()
+        player.currentTime = 18
+        player.duration = 90
+        player.isPlaying = true
+
+        player.cleanup()
+        // Snapshot post-first-call state.
+        let isPlayingAfterFirst = player.isPlaying
+        let currentTimeAfterFirst = player.currentTime
+        let progressAfterFirst = player.progress
+
+        player.cleanup()
+
+        XCTAssertEqual(player.isPlaying, isPlayingAfterFirst, "Second cleanup must not resurrect playback")
+        XCTAssertEqual(player.currentTime, currentTimeAfterFirst, "Second cleanup must not change currentTime")
+        XCTAssertEqual(player.progress, progressAfterFirst, "Second cleanup must not change progress")
+        XCTAssertFalse(player.isPlaying, "Should still be quiescent after second cleanup")
+        XCTAssertEqual(player.currentTime, 0, "currentTime should remain 0")
+    }
+
+    // AI:
+    //   what: cleanup on a fresh (never-loaded) player is a no-op
+    //   why:  PRD #31 — the view calls cleanup from onDisappear regardless of whether the user
+    //         actually started playback. A fresh AudioPlayer that never loaded an AVAudioPlayer
+    //         must survive cleanup() cleanly (no AVFoundation state to release, no timer to
+    //         invalidate). This guards the nil-default path on `player`.
+    //   ref:  PRD 31-audio-player-cleanup.json
+    @MainActor
+    func testCleanup_onFreshPlayer_isNoOp() {
+        let player = AudioPlayer()
+
+        player.cleanup()
+
+        XCTAssertFalse(player.isPlaying)
+        XCTAssertEqual(player.currentTime, 0)
+        XCTAssertEqual(player.duration, 0)
+    }
 }

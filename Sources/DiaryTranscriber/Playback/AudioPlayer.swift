@@ -105,8 +105,20 @@ public final class AudioPlayer {
         }
     }
 
+    // AI:
+    //   what: cleanup — tears down the AVAudioPlayer instance and stops the polling timer
+    //   why:  PRD #31 — EntryDetailView.onDisappear must hand off its audio session so that no
+    //         AVAudioPlayer stays active after the user navigates away mid-playback. We route
+    //         through `stop()` instead of re-implementing its logic so stop()'s timer/flag
+    //         invariants always remain the source of truth — then release the player reference
+    //         so the underlying AV resource is reclaimed. `stop()` is already idempotent (all
+    //         guard/no-op paths are safe to re-enter), which means cleanup() itself is
+    //         idempotent: calling it twice simply nils an already-nil player and re-stops a
+    //         timer that's already stopped. Memory of duration/currentTime is intentionally
+    //         left to `stop()` resetting currentTime to 0.
+    //   ref:  PRD 31-audio-player-cleanup.json
     public func cleanup() {
-        timer?.invalidate()
-        timer = nil
+        stop()
+        player = nil
     }
 }
