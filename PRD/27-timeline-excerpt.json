@@ -2,7 +2,7 @@
   "title": "Timeline Excerpt Preview",
   "priority": 2,
   "depends": ["diary-store", "content-view"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Implement DiaryStore.excerpt(for entry: DiaryEntry, length: Int = 120) async throws -> String that reads the first `length` characters of the entry's .md transcript; returns \"\" for missing/empty transcript (not a crash)",
     "Replace the literal \"\" in EntryRow.excerpt with a lazy-loaded preview from store.excerpt(for:); cache the field on the row view-model to avoid re-reading on each redraw",
