@@ -157,6 +157,53 @@ public final class RecordingViewModel {
         handle = nil
     }
 
+    // AI:
+    //   what: cancelRecording() — stop recording without running the transcription pipeline
+    //   why:  PRD #22 — when the user cancels or the sheet is dismissed externally while
+    //         recording (completedEntry == nil), we must tear down the recorder, timer,
+    //         and live stream so no microphone session, background tasks, or partial
+    //         .m4a files are left orphaned. Unlike `stop()`, this does NOT create a
+    //         `completedEntry` or run the transcription pipeline — the recording is
+    //         simply discarded.
+    //   ref:  PRD 22-recording-sheet-cancel-clear
+    public func cancelRecording() async {
+        guard !isFinalizing else { return }
+        cancelTimer()
+        cancelLiveStream()
+
+        // Stop the underlying recorder without capturing its output URL for a
+        // completedEntry. The caller (RecordingView) is responsible for cleaning
+        // up any partial .m4a file at `handle.outputURL`.
+        if handle != nil {
+            do {
+                _ = try await recorder.stop()
+            } catch {
+                // Recorder may already be stopped or never started; the
+                // partial-file cleanup in the view is best-effort regardless.
+                print("[RecordingViewModel] cancelRecording: recorder.stop() error: \(error.localizedDescription)")
+            }
+        }
+
+        handle = nil
+        completedEntry = nil
+        liveTranscript = ""
+    }
+
+    /// Deletes a partial .m4a file left behind after a cancelled recording
+    /// (`completedEntry == nil`). Called by `RecordingView` on cancel/dismiss.
+    /// Errors are caught and logged only — the file may already be removed or
+    /// locked, but we must not let cleanup failures surface to the UI (PRD #22).
+    nonisolated public static func removePartialFile(at url: URL?) {
+        guard let url else { return }
+        do {
+            if FileManager.default.fileExists(atPath: url.path) {
+                try FileManager.default.removeItem(at: url)
+            }
+        } catch {
+            print("[RecordingViewModel] Failed to remove partial file \(url.path): \(error.localizedDescription)")
+        }
+    }
+
     func appendTranscript(text: String) {
         if liveTranscript.isEmpty {
             liveTranscript = text

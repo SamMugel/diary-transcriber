@@ -9,6 +9,7 @@ import SwiftUI
 public struct RecordingView: View {
 
     @State private var viewModel: RecordingViewModel
+    @State private var hasCancelled = false
     @Environment(\.dismiss) private var dismiss
 
     /// Called when recording completes with the finished `DiaryEntry` plus the final
@@ -38,6 +39,12 @@ public struct RecordingView: View {
             header
             timer
             startStopButton
+            // AI: PRD #22 — visible Cancel/Close button in all states.
+            //     During recording: labeled "Cancel", triggers onCancel.
+            //     During finalizing: disabled.
+            //     After completion (briefly visible): labeled "Close".
+            //     After a failed start: labeled "Close", enables dismissal.
+            cancelButton
             if !viewModel.permissionMessage.isEmpty {
                 permissionBanner
             }
@@ -62,6 +69,17 @@ public struct RecordingView: View {
                 onCompleted?(entry, viewModel.completedTranscript)
                 dismiss()
             }
+        }
+        // AI: PRD #22 — fallback for external dismissal (window close, Escape via
+        //     toolbar). If completedEntry is nil (not auto-dismissed via onChange),
+        //     ensure the recording is torn down, any partial .m4a is removed, and
+        //     onCancel is invoked to reset ListViewModel state.
+        .onDisappear {
+            guard !hasCancelled, viewModel.completedEntry == nil else { return }
+            hasCancelled = true
+            let outputURL = viewModel.handle?.outputURL
+            RecordingViewModel.removePartialFile(at: outputURL)
+            onCancel?()
         }
     }
 
@@ -177,6 +195,55 @@ public struct RecordingView: View {
                 .foregroundStyle(.secondary)
         }
         .transition(.opacity)
+    }
+
+    // MARK: - Cancel / Close Button
+
+    // AI:
+    //   what: cancelButton — secondary action below the start/stop button
+    //   why:  PRD #22 — a visible Cancel/Close button reachable during the
+    //         recording state (and all other states) so the user can abort
+    //         or close the sheet without hunting for the toolbar action.
+    //         During recording: labeled "Cancel" and calls onCancel after
+    //         tearing down the recording.
+    //         During finalizing: disabled (the pipeline must complete).
+    //         After completion: labeled "Close" (briefly visible before
+    //         auto-dismiss via onChange).
+    //         After a failed start: labeled "Close", enabled for manual dismissal.
+    //   ref:  PRD 22-recording-sheet-cancel-clear
+    private var cancelButton: some View {
+        Button {
+            cancel()
+        } label: {
+            Text(viewModel.isRecording ? "Cancel" : "Close")
+                .font(.body)
+                .padding(.horizontal, 24)
+        }
+        .buttonStyle(.bordered)
+        .disabled(viewModel.isFinalizing)
+    }
+
+    /// Halt recording, clean up partial files, and invoke `onCancel`.
+    /// Called by the Cancel/Close button. Guarded by `hasCancelled` so the
+    /// `.onDisappear` fallback doesn't double-fire `onCancel`.
+    private func cancel() {
+        guard !hasCancelled else { return }
+        hasCancelled = true
+
+        let outputURL = viewModel.handle?.outputURL
+        let hasCompletedEntry = viewModel.completedEntry != nil
+
+        Task { @MainActor in
+            await viewModel.cancelRecording()
+            // Delete any partial .m4a file only when no entry was completed
+            // (i.e., the recording is being discarded, not finalized).
+            if !hasCompletedEntry {
+                RecordingViewModel.removePartialFile(at: outputURL)
+            }
+            onCancel?()
+        }
+
+        dismiss()
     }
 }
 

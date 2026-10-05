@@ -38,4 +38,50 @@ final class RecordingViewModelTests: XCTestCase {
         XCTAssertNil(vm.handle, "handle should remain nil")
         XCTAssertNil(vm.completedEntry, "completedEntry should remain nil")
     }
+
+    // AI: PRD #22 — tests for cancelRecording() and removePartialFile(at:).
+
+    @MainActor
+    func testCancelRecording_whenIdle_isNoOp() async {
+        let vm = RecordingViewModel()
+        await vm.cancelRecording()
+        XCTAssertFalse(vm.isRecording, "Should not be recording after cancel")
+        XCTAssertFalse(vm.isFinalizing, "isFinalizing should remain false")
+        XCTAssertNil(vm.handle, "handle should remain nil")
+        XCTAssertNil(vm.completedEntry, "completedEntry should remain nil")
+    }
+
+    @MainActor
+    func testCancelRecording_whenFinalizing_isNoOp() async {
+        let vm = RecordingViewModel()
+        // Simulate the finalizing state, which cancelRecording must NOT touch.
+        vm.isFinalizing = true
+        await vm.cancelRecording()
+        XCTAssertTrue(vm.isFinalizing, "isFinalizing should remain true when cancelled during finalizing")
+    }
+
+    func testRemovePartialFile_deletesExistingFile() {
+        // Create a temp file and verify removePartialFile deletes it.
+        let tempDir = URL(fileURLWithPath: NSTemporaryDirectory())
+        let uniqueName = "test-partial-\(UUID().uuidString).m4a"
+        let tempFile = tempDir.appendingPathComponent(uniqueName)
+        FileManager.default.createFile(atPath: tempFile.path, contents: Data(), attributes: nil)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: tempFile.path), "Temp file should exist before removal")
+
+        RecordingViewModel.removePartialFile(at: tempFile)
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: tempFile.path), "Partial file should be deleted")
+    }
+
+    func testRemovePartialFile_nilURL_isNoOp() {
+        // Passing nil should not crash and should be a no-op.
+        RecordingViewModel.removePartialFile(at: nil)
+    }
+
+    func testRemovePartialFile_nonExistentFile_isNoOp() {
+        // Pointing to a path that does not exist should not crash.
+        let nonExistent = URL(fileURLWithPath: "/tmp/diary-transcriber-nonexistent-\(UUID().uuidString).m4a")
+        RecordingViewModel.removePartialFile(at: nonExistent)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: nonExistent.path), "File should not exist")
+    }
 }
