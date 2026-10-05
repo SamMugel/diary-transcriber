@@ -42,9 +42,11 @@ public final class ListViewModel {
     //     default-construct a per-VM service. Optional + nil-default keeps existing tests that
     //     construct `ListViewModel(store:)` compiling. This reference is only consumed by downstream
     //     PRDs (#18) and #28 only wires it here; finishRecording() is unchanged.
-    private let transcriptionService: TranscriptionService?
+    // AI: PRD #35 — protocol-typed so tests can inject a stub yielding a deterministic
+    //     TranscriptUpdate.final without microphone or network.
+    private let transcriptionService: TranscriptionServiceProtocol?
 
-    public init(store: DiaryStore? = nil, transcriptionService: TranscriptionService? = nil) {
+    public init(store: DiaryStore? = nil, transcriptionService: TranscriptionServiceProtocol? = nil) {
         self.store = store
         self.transcriptionService = transcriptionService
         // AI: PRD #34 — initial refresh is kicked off by ContentView.body via
@@ -383,7 +385,7 @@ public struct ContentView: View {
     //     forwards the transcriptionService/store into the view-models rather than default-
     //     constructing them. The previous store-only init is preserved as a nil-default convenience
     //     so #Preview still works without an injected env (the .environment is added there too).
-    public init(store: DiaryStore? = nil, transcriptionService: TranscriptionService? = nil) {
+    public init(store: DiaryStore? = nil, transcriptionService: TranscriptionServiceProtocol? = nil) {
         self._viewModel = State(
             initialValue: ListViewModel(store: store, transcriptionService: transcriptionService)
         )

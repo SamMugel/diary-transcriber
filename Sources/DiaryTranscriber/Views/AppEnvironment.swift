@@ -28,7 +28,10 @@ public final class AppEnvironment {
     /// Shared transcription service. Built once at init from the Keychain API key; clients hold a
     /// stable `let` reference and reload the Whisper fallback via reloadWhisperClient() rather than
     /// swapping the whole instance (Approach R).
-    public let transcriptionService: TranscriptionService
+    // AI: PRD #35 — protocol-typed so view-models and tests can substitute a stub. The production
+    //     initializer returns a concrete `TranscriptionService`; the field widens to the protocol
+    //     so consumers depend on capability, not the concrete actor.
+    public let transcriptionService: TranscriptionServiceProtocol
 
     // AI: Production keychain coordinates; mirror KeychainHelper's private service/account. Tests
     //     inject their own service/account via the test-friendly initializers below so CI never
@@ -64,7 +67,7 @@ public final class AppEnvironment {
     public init(
         store: DiaryStore,
         settings: SettingsViewModel,
-        transcriptionService: TranscriptionService
+        transcriptionService: TranscriptionServiceProtocol
     ) {
         self.store = store
         self.settings = settings

@@ -10,7 +10,7 @@ import AVFoundation
 //         produce AAC-encoded .m4a files as required by specs/recording.md
 //   ref:  specs/recording.md AudioRecorder API, D-0002, D-0003
 
-public actor AudioRecorder {
+public actor AudioRecorder: AudioRecorderProtocol {
 
     private var isRecording = false
     private var currentOutputURL: URL?

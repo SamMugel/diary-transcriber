@@ -20,12 +20,14 @@ public final class RecordingViewModel {
     //     failure reason instead of silently persisting an empty transcript.
     public var transcriptionError: String = ""
 
-    private let recorder: AudioRecorder
+    private let recorder: AudioRecorderProtocol
     private let speechTranscriber: SpeechTranscriber?
     // AI: PRD #28 — shared TranscriptionService injected from AppEnvironment. Optional + nil-default
     //     so existing tests that construct `RecordingViewModel()` keep compiling. #28 only wires it
     //     here; stop() drives it in #18.
-    private let transcriptionService: TranscriptionService?
+    // AI: PRD #35 — protocol-typed so tests can inject a stub yielding a deterministic
+    //     TranscriptUpdate.final without microphone or network.
+    private let transcriptionService: TranscriptionServiceProtocol?
     private(set) var handle: RecordingHandle?
     // AI: PRD #24 — exposed as `internal private(set)` so the recycled `@testable`
     //     test target can assert that `teardown()` cancels the timer/live-stream
@@ -53,9 +55,9 @@ public final class RecordingViewModel {
     public private(set) var completedTranscript: Transcript?
 
     public init(
-        recorder: AudioRecorder = AudioRecorder(),
+        recorder: AudioRecorderProtocol = AudioRecorder(),
         speechTranscriber: SpeechTranscriber? = nil,
-        transcriptionService: TranscriptionService? = nil
+        transcriptionService: TranscriptionServiceProtocol? = nil
     ) {
         self.recorder = recorder
         // AI: Default to a shared SpeechTranscriber when not injected. Tests can

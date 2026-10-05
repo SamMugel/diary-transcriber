@@ -30,13 +30,15 @@ public final class EntryDetailViewModel {
     //     so existing tests that construct `EntryDetailViewModel(entry:)` keep compiling. #28 wired
     //     the field; #18 left it consumed by RecordingViewModel; #26 now consumes it here for
     //     re-transcription via `retranscribe()`. See PRD 26-retranscribe-button.json.
-    private let transcriptionService: TranscriptionService?
+    // AI: PRD #35 — protocol-typed so tests can inject a stub yielding a deterministic
+    //     TranscriptUpdate.final without microphone or network.
+    private let transcriptionService: TranscriptionServiceProtocol?
 
     public init(
         entry: DiaryEntry,
         store: DiaryStore? = nil,
         audioPlayer: AudioPlayer = AudioPlayer(),
-        transcriptionService: TranscriptionService? = nil
+        transcriptionService: TranscriptionServiceProtocol? = nil
     ) {
         self.entry = entry
         self.store = store

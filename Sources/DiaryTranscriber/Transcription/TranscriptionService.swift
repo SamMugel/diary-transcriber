@@ -6,7 +6,7 @@ import Foundation
 //         fallback on empty text, low confidence, error, or 3× audio duration hang protection
 //   ref:  specs/transcription.md TranscriptionService, D-0004
 
-public actor TranscriptionService {
+public actor TranscriptionService: TranscriptionServiceProtocol {
 
     private let speechTranscriber: SpeechTranscriber
     // AI: `var` so replaceWhisperClient(_) can rebuild the client after a Settings API-key commit,
@@ -35,7 +35,7 @@ public actor TranscriptionService {
     //         view-models keep a stable `let service` reference and the stateless
     //         SpeechTranscriber is not needlessly recreated.
     //   ref:  PRD 28-transcription-service-bootstrap, acceptance criterion 2
-    public func replaceWhisperClient(_ client: WhisperClient?) {
+    public func replaceWhisperClient(_ client: WhisperClient?) async {
         whisperClient = client
     }
 
@@ -46,11 +46,14 @@ public actor TranscriptionService {
     //         WhisperClient-backed service and that a missing key yields nil — without exposing
     //         the private field directly. Read-only and nonisolated-safe behind actor isolation.
     //   ref:  PRD 28-transcription-service-bootstrap, AppEnvironmentTests
-    public func hasWhisperClient() -> Bool {
+    public func hasWhisperClient() async -> Bool {
         whisperClient != nil
     }
 
-    public func transcribe(at audioURL: URL) -> AsyncStream<TranscriptUpdate> {
+    // AI: PRD #35 — `async` so the protocol-typed call surface uniformly crosses actor
+    //     isolation on protocol-typed references; production body is unchanged: a strong
+    //     reference is returned synchronously, callers `await` it explicitly.
+    public func transcribe(at audioURL: URL) async -> AsyncStream<TranscriptUpdate> {
         AsyncStream { continuation in
             let task = Task {
                 await self.runTranscription(audioURL: audioURL, continuation: continuation)
