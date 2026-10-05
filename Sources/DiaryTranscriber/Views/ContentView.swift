@@ -249,24 +249,37 @@ public final class ListViewModel {
 
 // AI:
 //   what: EmptyState — placeholder shown when no diary entries exist
-//   why:  specs/ui.md: EmptyState appears when DiaryStore returns no entries
-//   ref:  specs/ui.md ContentView, D-0008
+//   why:  specs/ui.md: EmptyState appears when DiaryStore returns no entries.
+//         PRD #33 — replaced the passive "Click 'New Entry'…" instruction with a
+//         centered, prominent CTA Button labeled "New Entry" (.borderedProminent)
+//         wired to the identical `startRecording()` action the toolbar uses, so
+//         there is one source of truth for starting the first recording.
+//   ref:  specs/ui.md ContentView, D-0008, PRD 33-empty-state-cta
 
 public struct EmptyState: View {
-    public init() {}
+    /// Invoked when the centered "New Entry" CTA is tapped. Defaults to `startRecording()`
+    /// on the owning `ListViewModel`; the single source of truth for the New Entry action.
+    public let onNewEntry: () -> Void
+
+    public init(onNewEntry: @escaping () -> Void) {
+        self.onNewEntry = onNewEntry
+    }
 
     public var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 18) {
             Image(systemName: "mic.circle")
                 .font(.system(size: 64))
                 .foregroundStyle(.secondary)
             Text("No entries yet")
                 .font(.headline)
                 .foregroundStyle(.secondary)
-            Text("Click “New Entry” to start recording your first diary entry.")
-                .font(.body)
-                .foregroundStyle(.tertiary)
-                .multilineTextAlignment(.center)
+            Button(action: onNewEntry) {
+                Label("New Entry", systemImage: "mic.fill")
+                    .font(.title3.weight(.semibold))
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .help("Start your first diary recording")
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -408,7 +421,9 @@ public struct ContentView: View {
                 )
             }
             if viewModel.entries.isEmpty {
-                EmptyState()
+                EmptyState {
+                    viewModel.startRecording()
+                }
             } else {
                 ScrollView {
                     LazyVStack(spacing: 0) {
