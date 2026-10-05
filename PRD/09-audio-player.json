@@ -2,7 +2,7 @@
   "title": "Audio Player",
   "priority": 5,
   "depends": [],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Implement AudioPlayer as @Observable wrapper around AVAudioPlayer",
     "Expose play/pause, scrubber position, and timecode as published properties",
@@ -17,5 +17,6 @@
   "out_of_scope": [
     "Volume control",
     "Multiple simultaneous tracks"
-  ]
+  ],
+  "notes": "Audit-flip from prior Ralph loops. AudioPlayer exists at Sources/DiaryTranscriber/Playback/AudioPlayer.swift as `@Observable @MainActor final class AudioPlayer` wrapping `private var player: AVAudioPlayer?`. All four required methods present: load(from: URL) throws, play(), pause()/togglePlayPause(), stop(), plus scrub(to:) and a private Timer that polls AVAudioPlayer.currentTime at 0.25-second intervals (exactly 4 Hz = minimum required frequency). Published properties: isPlaying, duration, currentTime, plus computed progress (clamped 0..1) and timecode (MM:SS format, fractional seconds truncated). Playback completion handling is in updateCurrentTime(): when player.isPlaying flips false, currentTime resets to 0, isPlaying flips false, timer stops — matching the 'reset to start' requirement. Tests in Tests/DiaryTranscriberTests/AudioPlayerTests.swift cover 7 cases: initial state, no-op guards without loaded player, stop() reset, timecode formatting (zero, sub-minute, minute-boundary, fractional, 59:59 ceiling), and progress clamping (zero-duration, mid-track, overflow). Direct AVAudioPlayer live playback isn't unit-tested (requires PCM bytes on disk + main-timer pump) but every published property is verified statically. Tests pass as part of the 82-test green suite validated this loop. No code changes needed — status-flip only."
 }
