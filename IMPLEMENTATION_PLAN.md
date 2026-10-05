@@ -23,7 +23,7 @@ sorted by `Depends:`; within each level, sorted by `Priority` ascending.
 | 14 | 21 | macos-microphone-permission | 2 | 1 | permission-manager, audio-recorder | done |
 | 15 | 23 | recorder-stop-error-handling | 2 | 1 | audio-recorder | done |
 | 16 | 11 | content-view | 2 | 3 | diary-store | done |
-| 17 | 12 | recording-view | 2 | 4 | audio-recorder, speech-transcriber | todo |
+| 17 | 12 | recording-view | 2 | 4 | audio-recorder, speech-transcriber | done |
 | 18 | 08 | transcription-service | 2 | 5 | speech-transcriber, whisper-client | done |
 | 19 | 10 | file-system-watcher | 2 | 5 | diary-store | done |
 | 20 | 13 | entry-detail-view | 2 | 6 | audio-player, diary-store | todo |
@@ -42,8 +42,77 @@ sorted by `Depends:`; within each level, sorted by `Priority` ascending.
 | 33 | 36 | transcription-service-tests | 4 | 3 | test-suites | todo |
 | 34 | 40 | ats-handling-audit | 4 | 4 | whisper-client, finish-recording-error-feedback | todo |
 | 35 | 16 | packaging | 4 | 7 | recording-view, entry-detail-view, settings-view, timeline | todo |
-| 36 | 19 | live-transcript-streaming | 5 | 1 | transcription-post-recording-pipeline, speech-transcriber | todo |
+| 36 | 19 | live-transcript-streaming | 5 | 1 | transcription-post-recording-pipeline, speech-transcriber | done |
 | 37 | 26 | retranscribe-button | 5 | 2 | entry-detail-view, transcription-service, transcription-service-bootstrap, transcription-post-recording-pipeline | todo |
 | 38 | 35 | end-to-end-record-pipeline-tests | 5 | 3 | test-suites, transcription-post-recording-pipeline | todo |
 | 39 | 37 | package-script-cwd | 5 | 4 | packaging | todo |
 | 40 | 39 | info-plist-speech-recognition-key | 5 | 4 | packaging | todo |
+
+---
+
+## HANDOFF — Ralph PRD Implementer
+
+Ralph re-reads `IMPLEMENTATION_PLAN.md` each loop. The brief below rides with
+that context and persists across context resets.
+
+**State of work:**
+- 40 PRDs total; 19 `done`, 21 `todo`. The `status` field in each
+  `PRD/*.json` is the canonical source of truth; this table is a derived view.
+- Branch `main`, 14 commits ahead of `origin/main`. NOT pushed. Do not push
+  unless explicitly instructed.
+- Working tree clean (the only loose change was the test-assertion restore;
+  see commit history).
+
+**Critical-path P1 (#18):**
+- `transcription-post-recording-pipeline` (PRD #18, **P1**, blocks the app's
+  primary function) is `todo` and blocked **only** by `transcription-service-bootstrap`
+  (#28). Every other dependency of #18 is `done`.
+- Run #28 first (Level 3, eligible), then #18 (Level 4, will become eligible).
+- Ralph orders by priority within a level; ties break alphabetically. To avoid
+  Ralph picking another P2 (e.g. `finish-recording-error-feedback`) before #28,
+  follow the explicit ordering in **## Critical path**.
+
+**## Critical path**
+
+```
+#28 (transcription-service-bootstrap)  → unblocks
+#18 (transcription-post-recording-pipeline, P1)  → unblocks
+   [#19 already done]  → unblocks
+#19 — DONE — (was the next blocker)
+#26 (retranscribe-button, downstream of #18)
+```
+
+**Known latent bugs (flag, do not fix in the same commit as #18):**
+- `Sources/DiaryTranscriber/Transcription/TranscriptionService.swift` `SafeFlag`
+  race (lines ~212-219): two boolean fields mutated across actors without
+  synchronization. `#20` (deadlock-fix in PRD history) used `Mutex<State>` to
+  fix a similar bug; do the same here if #18's validation surfaces it.
+- Same file, timeout task leak (lines ~132-167): the loser of `raceSpeechAndWhisper`
+  is never cancelled, leaked to the thread pool. Cancel it explicitly.
+- `Resources/Info.plist` `LSMinimumSystemVersion` is `14.0` but `Package.swift`
+  is `.macOS(.v15)` (PRD #20's `Mutex` requires macOS 15+). Update to `15.0`.
+- `Content/EntryRow.excerpt` returns `""` (PRD #27) — Ralph will hit this in
+  the `timeline-excerpt` PRD (#27), not earlier.
+- If any of these surface during #18's implementation, write a new
+  `CODE_REVIEW_ISSUES.md` entry and create a follow-up todo PRD. Do **not**
+  mix fixes into #18's commit.
+
+**Rules of engagement for Ralph:**
+- One task per loop. Implement → validate → commit → flip status → stop.
+- Re-invoke Ralph to advance to the next task or retry a blocked item.
+- Search before implementing (`grep`/`rg` before assuming not implemented).
+- Backpressure is the only exit signal: `swift build` + `swift test` MUST pass.
+  Treat warnings as failures (`swift build` doubles as the lint step).
+- No placeholders, no stubs, no deferred work. If a PRD is too large, split it
+  into atomic commits but keep it as one PRD flip.
+- Persist progress to `PRD/*.json` `status` field, not just this file.
+- Do not push to origin unless explicitly instructed.
+- macOS 15+ required (Sonoma). Xcode 16+. Swift 6+ with `-strict-concurrency=complete`.
+- Tests live at `Tests/DiaryTranscriberTests/`; use `@testable import DiaryTranscriberCore`.
+  Internal types are reachable — don't make needed-by-tests types `private`.
+- App-level wiring is in `App/DiaryTranscriberApp.swift`; the DI point is
+  `ContentView`/`ListViewModel`. No DI container exists. #28 will introduce
+  service construction with a real `WhisperClient(apiKey:)` from Keychain.
+
+**`RALPH_COMPLETE` condition:** all 40 PRDs `status: "done"`.
+**`RALPH_BLOCKED` condition:** list the blocked PRDs with their blocking errors.

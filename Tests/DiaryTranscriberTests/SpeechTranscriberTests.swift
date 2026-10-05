@@ -74,7 +74,7 @@ final class SpeechTranscriberTests: XCTestCase {
         let stream = await transcriber.liveStream()
 
         var collected: [String] = []
-        for await let text in stream {
+        for await text in stream {
             collected.append(text)
         }
 

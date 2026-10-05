@@ -2,7 +2,7 @@
   "title": "Live Transcript Streaming During Recording",
   "priority": 1,
   "depends": ["transcription-post-recording-pipeline", "speech-transcriber"],
-  "status": "todo",
+  "status": "done",
   "requirements": [
     "Replace the placeholder \"Live transcript will appear here…\" with the static message \"Recording… transcription will start when you stop\" displayed during recording",
     "After stop(), the final transcript from service.transcribe replaces the deferred-message in the transcript area"
